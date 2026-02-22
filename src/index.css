@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-electric-blue: #00E5FF;
+  --color-space-gray: #121212;
+  --color-glass-bg: rgba(30, 41, 59, 0.4);
+  --backdrop-blur-xs: 2px;
+  --color-primary: #00E5FF;
+  --color-bg: #121212;
+  --color-card: #1E1E1E;
+  --color-text: #FFFFFF;
+  --color-dim: #94A3B8;
+}
+
+:root {
+  --color-primary: #00E5FF;
+  --color-bg: #121212;
+  --color-card: #1E1E1E;
+  --color-text: #FFFFFF;
+  --color-dim: #94A3B8;
+  --glass: rgba(255, 255, 255, 0.03);
+  --blur: blur(20px);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #00E5FF 0%, #007AFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Base components */
+.btn-primary {
+  @apply bg-electric-blue text-black font-bold py-3 px-6 rounded-2xl transition-all active:scale-95;
+}
+
+.card {
+  @apply bg-[#1E1E1E] rounded-3xl p-6 border border-white/5;
+}
+
+.content-wrapper {
+  @apply max-w-lg mx-auto p-6 pb-28 min-h-screen relative;
+}
+
+/* Tab bar special effect */
+.glass-nav {
+  @apply fixed bottom-0 left-0 right-0 h-20 flex justify-around items-center px-4 z-50;
+  background: rgba(18, 18, 18, 0.8);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-item {
+  @apply flex flex-col items-center gap-1 text-dim transition-all;
+}
+
+.nav-item.active {
+  @apply text-electric-blue;
+}
