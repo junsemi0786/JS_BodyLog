@@ -566,7 +566,9 @@ const App = () => {
 
   useEffect(() => {
     const today = new Date().toDateString();
-    if (condition.lastRecorded !== today) {
+    const lastDate = condition.lastRecorded ? new Date(condition.lastRecorded).toDateString() : null;
+
+    if (lastDate !== today) {
       setTimeout(() => setShowCondition(true), 1000);
     }
   }, [condition.lastRecorded]);
