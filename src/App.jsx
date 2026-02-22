@@ -125,7 +125,20 @@ const ConditionModal = ({ onSave }) => {
 
 // --- [HomeView] Anti-Gravity Futuristic Dashboard ---
 const HomeView = () => {
-  const { profile, agScore, healthKit, ptPlan, analysis, completeWorkout } = useRoutine();
+  const {
+    profile, agScore, healthKit, ptPlan, analysis, completeWorkout, addExerciseEntry
+  } = useRoutine();
+
+  const handleCompleteSession = () => {
+    addExerciseEntry({
+      category: 'Strength',
+      exercises: ptPlan.recommendations,
+      duration: 45,
+      burntKcal: 320
+    });
+    completeWorkout(); // Legacy XP gain & streak
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+  };
 
   return (
     <div className="content-wrapper pb-32">
@@ -186,7 +199,9 @@ const HomeView = () => {
       {analysis && (
         <section className="mb-10 px-2 animate-in fade-in zoom-in duration-500">
           <div className={`card p-6 border-l-4 ${analysis.status === 'positive' ? 'border-l-emerald-500 bg-emerald-500/5' : analysis.status === 'warning' ? 'border-l-rose-500 bg-rose-500/5' : analysis.status === 'caution' ? 'border-l-amber-500 bg-amber-500/5' : 'border-l-electric-blue'}`}>
-            <h4 className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-2">Coach Intelligence</h4>
+            <h4 className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-2">
+              {analysis.currentMode} Intelligence
+            </h4>
             <p className="text-sm font-black text-white leading-relaxed tracking-tight italic">
               "{analysis.interpretation}"
             </p>
@@ -203,12 +218,14 @@ const HomeView = () => {
             </div>
             <div className="flex justify-between items-start mb-10">
               <div>
-                <span className="bg-electric-blue text-space-gray text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase mb-2 inline-block">Analysis Active</span>
-                <h3 className="text-3xl font-black italic tracking-tighter mt-2">{analysis.recommendedFasting} PROTOCOL</h3>
+                <span className={`text-space-gray text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase mb-2 inline-block ${analysis.status === 'positive' ? 'bg-emerald-500' : 'bg-electric-blue'}`}>
+                  {analysis.currentMode} Active
+                </span>
+                <h3 className="text-3xl font-black italic tracking-tighter mt-2">METRIC PROTOCOL</h3>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Program Week</p>
-                <p className="text-4xl font-black text-electric-blue italic">{analysis.week}</p>
+                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Target BMR</p>
+                <p className="text-2xl font-black text-white italic">{analysis.bmr} <span className="text-[10px] not-italic text-dim">kcal</span></p>
               </div>
             </div>
 
@@ -221,10 +238,10 @@ const HomeView = () => {
                 </div>
               </div>
               <div className="space-y-1 text-right">
-                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Cardio Goal</p>
+                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Target TDEE</p>
                 <div className="flex items-baseline gap-1 justify-end">
-                  <span className="text-2xl font-black text-white italic">{analysis.cardioMinutes}</span>
-                  <span className="text-xs font-bold text-dim uppercase">min</span>
+                  <span className="text-2xl font-black text-white italic">{analysis.tdee}</span>
+                  <span className="text-xs font-bold text-dim uppercase">kcal</span>
                 </div>
               </div>
             </div>
@@ -272,8 +289,8 @@ const HomeView = () => {
       <section className="mb-12 px-2">
         <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-4 uppercase pl-2 flex justify-between items-center">
           Today's Routine
-          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${ptPlan.currentMode === 'Reset' ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]' : ptPlan.currentMode === 'Recovery' ? 'bg-rose-500 text-white' : ptPlan.currentMode === 'Overload' ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-electric-blue text-black'}`}>
-            {ptPlan.currentMode.toUpperCase()} MODE
+          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${(analysis?.currentMode || ptPlan?.currentMode) === 'Reset' ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]' : (analysis?.currentMode || ptPlan?.currentMode) === 'Recovery' ? 'bg-rose-500 text-white' : (analysis?.currentMode || ptPlan?.currentMode) === 'Overload' ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-electric-blue text-black'}`}>
+            {(analysis?.currentMode || ptPlan?.currentMode || 'Normal').toUpperCase()} MODE
           </span>
         </h3>
         <div className="space-y-4">
@@ -293,7 +310,7 @@ const HomeView = () => {
               </div>
             </div>
           ))}
-          <button className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-black tracking-widest active:scale-95 transition-all text-base mt-4" onClick={completeWorkout}>
+          <button className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-black tracking-widest active:scale-95 transition-all text-base mt-4" onClick={handleCompleteSession}>
             COMPLETE SESSION
           </button>
         </div>
@@ -323,15 +340,22 @@ const HomeView = () => {
 
 // --- [RecordView] Minimalism Logging ---
 const RecordView = () => {
-  const { habits, toggleHabit, addDietEntry, carryover } = useRoutine();
+  const {
+    diet, activity, habits, toggleHabit, addDietEntry, carryover
+  } = useRoutine();
 
   const handleVoiceInput = () => {
     const text = window.prompt("식단 내용을 입력하세요 (예: 닭가슴살 샐러드, 현미밥)");
     if (text) {
       // Fake AI Processing Animation Mock
-      const processing = window.confirm(`AI 분석 중: "${text}"\n\n- 칼로리: 350kcal\n- 단백질: 28g\n- 내장지방 영향: 낮음\n\n기록할까요?`);
+      const processing = window.confirm(`AI 분석 중: "${text}"\n\n- 칼로리: 350kcal\n- 단백질: 28g\n- 탄수화물: 40g\n- 지방: 10g\n\n기록할까요?`);
       if (processing) {
-        addDietEntry({ name: text, protein: 28, kcal: 350 });
+        addDietEntry({
+          type: 'Lunch',
+          items: [{ name: text, kcal: 350, protein: 28, carb: 40, fat: 10 }],
+          isAiAnalyzed: true,
+          feedback: "고단백 식단입니다. 점진적 과부하 모드에 적합한 에너지원입니다."
+        });
         confetti({ particleCount: 50, spread: 80, origin: { y: 0.7 }, colors: ['#00E5FF'] });
       }
     }
@@ -340,7 +364,12 @@ const RecordView = () => {
   const handleCameraInput = () => {
     const mockAnalysis = window.confirm("AI Vision 렌즈 기동...\n\n사진에서 '훈제오리 샐러드'를 감지했습니다.\n- 예상 단백질: 22g\n- 예상 지방: 14g\n\n기록에 추가할까요?");
     if (mockAnalysis) {
-      addDietEntry({ name: '훈제오리 샐러드', protein: 22, kcal: 280 });
+      addDietEntry({
+        type: 'Snack',
+        items: [{ name: '훈제오리 샐러드', kcal: 280, protein: 22, carb: 10, fat: 14 }],
+        isAiAnalyzed: true,
+        feedback: "좋은 지방 공급원입니다. 정체기 돌파를 위한 에너지를 확보하세요."
+      });
       confetti({ particleCount: 40, colors: ['#00E5FF'] });
     }
   };
@@ -361,23 +390,62 @@ const RecordView = () => {
       </div>
 
       <div className="space-y-4 px-2">
-        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-2 mb-2">Daily Protein Log (PRD F4)</h3>
-        {['점심 식사', '운동 직후', '저녁 식사'].map((meal, idx) => (
-          <div key={idx} className="card p-6 flex justify-between items-center group cursor-pointer active:bg-white/5">
-            <div className="flex items-center gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                <ClipboardList size={20} className="text-electric-blue opacity-60" />
-              </div>
-              <div>
-                <h4 className="font-black text-white text-lg tracking-tight">{meal}</h4>
-                <p className="text-[10px] text-dim font-bold uppercase tracking-widest">Recommended: 30g+</p>
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-lg border-2 border-white/20 flex items-center justify-center group-active:border-electric-blue">
-              <CheckCircle2 size={16} className="text-electric-blue opacity-0 group-active:opacity-100" />
-            </div>
+        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-2 mb-2">Recent Nutrition Log</h3>
+        {diet.logs.length === 0 ? (
+          <div className="card p-10 text-center border-dashed border-white/5">
+            <p className="text-xs text-dim italic">기록된 식단이 없습니다.<br />AI 렌즈나 음성으로 기록해 보세요.</p>
           </div>
-        ))}
+        ) : (
+          diet.logs.slice(0, 3).map((log, idx) => {
+            const totalKcal = log.items.reduce((sum, item) => sum + item.kcal, 0);
+            const totalProtein = log.items.reduce((sum, item) => sum + item.protein, 0);
+            return (
+              <div key={log.id} className="card p-6 flex justify-between items-center group">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Flame size={20} className="text-rose-500 opacity-60" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-white text-lg tracking-tight">{log.items[0]?.name || "기록된 식사"}</h4>
+                    <p className="text-[10px] text-dim font-bold uppercase tracking-widest">
+                      {totalProtein}g Protein · {totalKcal} kcal
+                    </p>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center">
+                  <span className="text-[10px] font-black text-electric-blue">{log.aiAnalysis.isPhotoAnalyzed ? 'AI' : ''}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Workout Log (MVP Category 3) */}
+        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mt-12 mb-2">Workout Log</h3>
+        {activity.workouts.length === 0 ? (
+          <div className="card p-10 text-center border-dashed border-white/5">
+            <p className="text-xs text-dim italic">기록된 운동이 없습니다.<br />오늘의 세션을 완료해 보세요.</p>
+          </div>
+        ) : (
+          activity.workouts.slice(0, 2).map((workout, idx) => (
+            <div key={workout.id} className="card p-6 flex justify-between items-center group">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Activity size={20} className="text-electric-blue opacity-60" />
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-lg tracking-tight">{workout.exercises[0]?.name || "기타 운동"}</h4>
+                  <p className="text-[10px] text-dim font-bold uppercase tracking-widest">
+                    {workout.totalDurationMin} min · {workout.totalBurntKcal} kcal
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-black text-electric-blue">DONE</span>
+              </div>
+            </div>
+          ))
+        )}
 
         <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mt-12 mb-2">Habit Stacking</h3>
         {habits.map(habit => (
@@ -430,7 +498,7 @@ const ReportView = () => {
 
         <div className="space-y-6">
           {[
-            { label: 'Skeletal Muscle', val: healthData.inbodyHistory[0]?.skeletalMuscle, target: 35, unit: 'kg', color: 'bg-emerald-500' },
+            { label: 'Skeletal Muscle', val: healthData.inbodyHistory[0]?.muscleMass, target: 35, unit: 'kg', color: 'bg-emerald-500' },
             { label: 'Body Fat', val: healthData.inbodyHistory[0]?.fat, target: 15, unit: '%', color: 'bg-rose-500' },
             { label: 'Visceral Fat', val: healthData.inbodyHistory[0]?.visceralFat, target: 8, unit: 'Level', color: 'bg-amber-500' },
           ].map((item, i) => (
@@ -472,7 +540,7 @@ const ReportView = () => {
         </div>
         <div className="card p-5 border-electric-blue/20">
           <p className="text-[10px] text-dim font-bold uppercase mb-1">Rank Status</p>
-          <p className="text-sm font-black text-electric-blue uppercase">{agScore > 60 ? 'Stellar Voyager' : 'Ground Zero'}</p>
+          <p className="text-sm font-black text-electric-blue uppercase">{analysis.agScore > 50 ? 'Stellar Voyager' : 'Ground Zero'}</p>
         </div>
       </div>
     </div>
