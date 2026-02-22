@@ -33,10 +33,19 @@ export const RoutineProvider = ({ children }) => {
         const saved = localStorage.getItem('ag_diet');
         if (saved) return JSON.parse(saved);
 
-        // Migration from legacy 'pfp_health' logs
-        const legacy = localStorage.getItem('pfp_health');
-        const logs = legacy ? JSON.parse(legacy).dietLogs || [] : [];
-        return { logs, stats: { todayTotalKcal: 0, todayCarb: 0, todayProtein: 0, todayFat: 0 } };
+        // Dummy Data explicitly injected to prevent NaN and show UI functionality (User request)
+        return {
+            logs: [
+                { id: '1', items: [{ name: '연어 포케 샐러드', protein: 32, kcal: 450 }] },
+                { id: '2', items: [{ name: '그릭 요거트 & 오트밀', protein: 18, kcal: 320 }] }
+            ],
+            stats: {
+                todayTotalKcal: 1250,
+                todayCarb: 110,
+                todayProtein: 85,
+                todayFat: 45
+            }
+        };
     });
 
     // [Activity & Workouts]

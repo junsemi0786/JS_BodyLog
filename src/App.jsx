@@ -123,13 +123,12 @@ const ConditionModal = ({ onSave }) => {
   );
 };
 
-// --- [HomeView] Anti-Gravity Futuristic Dashboard ---
-const HomeView = () => {
-  const {
-    profile, agScore, healthKit, ptPlan, analysis, completeWorkout, addExerciseEntry, habits
-  } = useRoutine();
+// --- [HomeView] Practical InOut-style Dashboard ---
+const HomeView = ({ onNavigate }) => {
+  const { analysis, habits, ptPlan, completeWorkout, addExerciseEntry } = useRoutine();
+  const [showSettings, setShowSettings] = useState(false);
 
-  if (!analysis) return <div className="p-10 text-center animate-pulse text-dim">INITIALIZING ORBIT...</div>;
+  if (!analysis) return <div className="p-10 text-center animate-pulse text-dim">LOADING DATA...</div>;
 
   const handleCompleteSession = () => {
     addExerciseEntry({
@@ -142,164 +141,136 @@ const HomeView = () => {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
   };
 
-  const [showSettings, setShowSettings] = useState(false);
+  // Safe variables to prevent NaN errors
+  const intake = analysis.intake || 0;
+  const tdee = analysis.tdee || 2000;
+  const remaining = Math.max(0, tdee - intake);
+  const intakePercent = Math.min(100, (intake / tdee) * 100) || 0;
+
+  // SVG Circle calculations (safe against NaN)
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius; // ~377
+  const strokeDashoffset = isNaN(circumference) ? 0 : circumference - (intakePercent / 100) * circumference;
 
   return (
-    <div className="content-wrapper pb-32 animate-in fade-in duration-700">
-      <header className="mb-10 pt-6 flex justify-between items-center px-2">
+    <div className="content-wrapper pb-32 animate-in fade-in duration-500">
+      <header className="mb-6 pt-6 flex justify-between items-center px-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter text-white italic leading-none">ORBIT</h1>
-          <p className="text-dim text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Active Protocol: {analysis.currentMode}</p>
+          <h1 className="text-2xl font-black text-text">대시보드</h1>
+          <p className="text-dim text-[10px] font-bold mt-1">{new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' })}</p>
         </div>
         <div className="relative">
           <div
-            className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden relative group cursor-pointer"
+            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 cursor-pointer transition-transform active:scale-95"
             onClick={() => setShowSettings(true)}
           >
-            <User size={20} className="text-electric-blue transition-transform group-active:scale-90" />
-            <div className="absolute inset-0 bg-electric-blue/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <User size={18} className="text-dim hover:text-primary transition-colors" />
           </div>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-space-gray" />
+          <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-bg" />
         </div>
       </header>
 
-      {/* 1. Macro Visualizer (Inout Benchmarked) */}
-      <section className="mb-8 px-2">
-        <div className="card glass p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
-            <Flame size={120} />
-          </div>
+      {/* 1. Main Calorie Gauge Section */}
+      <section className="mb-8 px-4 flex flex-col items-center">
+        <div className="card w-full flex flex-col items-center py-8">
+          <h2 className="text-sm font-bold text-dim mb-4">오늘의 식단</h2>
 
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <p className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-1">Calories Remaining</p>
-              <h2 className="text-5xl font-black text-white italic tracking-tighter">
-                {analysis.remainingKcal} <span className="text-sm not-italic text-dim uppercase">kcal</span>
-              </h2>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-1">Total Intake</p>
-              <p className="text-xl font-black text-electric-blue italic">{analysis.intake} <span className="text-[10px] not-italic text-dim opacity-60">/ {analysis.tdee}</span></p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {[
-              { label: 'Carb', cur: analysis.currentMacros.carb, tar: analysis.targetMacros.carb, color: 'bg-sky-400', glow: 'shadow-[0_0_10px_rgba(56,189,248,0.4)]' },
-              { label: 'Protein', cur: analysis.currentMacros.protein, tar: analysis.targetMacros.protein, color: 'bg-emerald-400', glow: 'shadow-[0_0_10px_rgba(52,211,153,0.4)]' },
-              { label: 'Fat', cur: analysis.currentMacros.fat, tar: analysis.targetMacros.fat, color: 'bg-rose-400', glow: 'shadow-[0_0_10px_rgba(251,113,133,0.4)]' }
-            ].map((macro, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-black text-dim uppercase tracking-widest">{macro.label}</span>
-                  <span className="text-xs font-black text-white italic">{macro.cur}g <span className="text-[9px] text-dim not-italic opacity-40">/ {macro.tar}g</span></span>
-                </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${macro.color} ${macro.glow} transition-all duration-1000 ease-out`}
-                    style={{ width: `${Math.min(100, (macro.cur / macro.tar) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Biorhythm (Fasting) & Gravity Score Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-8 px-2">
-        {/* Fasting Widget */}
-        <div className="card glass p-6 flex flex-col items-center justify-center relative group cursor-pointer active:scale-95 transition-all">
-          <div className="relative w-24 h-24 mb-4">
-            <svg className="w-full h-full -rotate-90">
-              <circle cx="48" cy="48" r="42" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="none" />
+          <div className="relative flex items-center justify-center w-48 h-48 mb-6">
+            {/* Background Track */}
+            <svg className="absolute inset-0 w-full h-full -rotate-90">
               <circle
-                cx="48" cy="48" r="42"
-                stroke="#00E5FF" strokeWidth="6" fill="none"
-                strokeDasharray="263.89"
-                strokeDashoffset={263.89 * (1 - analysis.fasting.hoursPassed / analysis.fasting.totalHours)}
+                cx="50%" cy="50%" r={radius}
+                stroke="var(--color-bg)" strokeWidth="14" fill="none"
+              />
+              {/* Progress Track */}
+              <circle
+                cx="50%" cy="50%" r={radius}
+                stroke="var(--color-primary)" strokeWidth="14" fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
-                className="transition-all duration-1000"
+                className="transition-all duration-1000 ease-out"
               />
             </svg>
+
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-base font-black text-white leading-none">{analysis.fasting.timer}</span>
-              <p className="text-[7px] text-dim font-bold uppercase mt-1">Left</p>
+              <span className="text-[10px] font-bold text-dim mb-1">섭취 칼로리</span>
+              <span className="text-4xl font-black text-text tracking-tighter">{intake}</span>
+              <span className="text-[10px] font-bold text-dim mt-1">/ {tdee} kcal</span>
             </div>
           </div>
-          <h4 className="text-[9px] font-black text-electric-blue tracking-[0.2em] uppercase mb-1">{analysis.fasting.state}</h4>
-          <p className="text-[10px] text-dim font-bold">{analysis.fasting.protocol} Fasting</p>
-        </div>
 
-        {/* Gravity Score Widget */}
-        <div className="card glass p-6 flex flex-col items-center justify-center">
-          <div className="relative w-24 h-24 mb-4 flex items-center justify-center">
-            <div className="absolute inset-0 bg-electric-blue/5 rounded-full animate-pulse" />
-            <span className="text-4xl font-black text-white italic">{agScore}</span>
-          </div>
-          <h4 className="text-[9px] font-black text-dim tracking-[0.2em] uppercase mb-1">Gravity Score</h4>
-          <div className="flex gap-1">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < Math.floor(agScore / 20) ? 'bg-electric-blue' : 'bg-white/10'}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. AI Insight Section */}
-      <section className="mb-8 px-2">
-        <div className={`card p-6 border-l-4 overflow-hidden relative ${analysis.status === 'positive' ? 'border-l-emerald-500 bg-emerald-500/5' : analysis.status === 'warning' ? 'border-l-rose-500 bg-rose-500/5' : 'border-l-electric-blue bg-white/[0.02]'}`}>
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-white/5 rounded-2xl text-electric-blue">
-              <Zap size={20} className="animate-pulse" />
+          <div className="flex w-full px-8 justify-between text-center">
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] text-dim font-bold mb-1">권장 목표</p>
+              <p className="font-bold text-text">{tdee} <span className="text-[10px] font-normal">kcal</span></p>
             </div>
-            <div>
-              <h4 className="text-[10px] font-black text-dim tracking-widest uppercase mb-1">AG Intelligence Report</h4>
-              <p className="text-sm font-bold text-white leading-tight italic tracking-tight">
-                "{analysis.interpretation}"
-              </p>
+            <div className="w-px h-8 bg-slate-100"></div>
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] text-dim font-bold mb-1">잔여 칼로리</p>
+              <p className="font-bold text-primary">{remaining} <span className="text-[10px] font-normal">kcal</span></p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. Activity Mission Hub */}
-      <section className="mb-12 px-2">
-        <div className="flex justify-between items-end mb-4 px-2">
-          <h3 className="text-[10px] font-black text-dim tracking-[0.3em] uppercase">Daily Mission Hub</h3>
-          <span className="text-[10px] font-black text-electric-blue">{habits.filter(h => h.streak > 0).length} / {habits.length} COMPLETED</span>
-        </div>
+      {/* 2. Primary Record Button (+ 식단 기록하기) */}
+      <div className="px-4 mb-8">
+        <button onClick={() => onNavigate('record')} className="w-full py-4 rounded-xl bg-text text-card font-bold text-sm shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2">
+          <Plus size={18} />
+          식단 기록하기
+        </button>
+      </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {[
-            { label: 'Steps', val: healthKit.steps, icon: <Footprints size={18} />, color: 'text-emerald-400' },
-            { label: 'Burnt', val: healthKit.burntKcal, icon: <Flame size={18} />, color: 'text-orange-400' },
-            { label: 'Heart', val: healthKit.heartRate, icon: <Heart size={18} />, color: 'text-rose-400' }
-          ].map((stat, i) => (
-            <div key={i} className="card p-4 flex flex-col items-center gap-2 bg-white/[0.02] border-white/5">
-              <span className={`${stat.color} opacity-80`}>{stat.icon}</span>
-              <span className="text-sm font-black text-white">{stat.val}</span>
-              <span className="text-[8px] text-dim font-bold uppercase tracking-tighter">{stat.label}</span>
-            </div>
-          ))}
-        </div>
+      {/* 3. Macronutrient Progress Bars (탄단지) */}
+      <section className="px-4 mb-8">
+        <div className="card p-6">
+          <h3 className="text-sm font-bold text-text mb-5">영양소 섭취 현황</h3>
 
-        {/* Habit Summary for Dashboard */}
+          <div className="space-y-6">
+            {[
+              { label: '탄수화물', cur: analysis.currentMacros.carb || 0, tar: analysis.targetMacros.carb || 150, color: 'bg-emerald-400' },
+              { label: '단백질', cur: analysis.currentMacros.protein || 0, tar: analysis.targetMacros.protein || 100, color: 'bg-sky-400' },
+              { label: '지방', cur: analysis.currentMacros.fat || 0, tar: analysis.targetMacros.fat || 50, color: 'bg-amber-400' }
+            ].map((macro, i) => {
+              const safePercent = Math.min(100, (macro.cur / macro.tar) * 100) || 0;
+              return (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-dim">{macro.label}</span>
+                    <span className="font-bold text-text">{macro.cur}g <span className="text-dim/60 font-medium">/ {macro.tar}g</span></span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${macro.color} rounded-full transition-all duration-1000 ease-out`}
+                      style={{ width: `${safePercent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Active Missions / Habits */}
+      <section className="px-4">
+        <h3 className="text-sm font-bold text-text mb-4">오늘의 미션</h3>
         <div className="space-y-3">
           {habits.slice(0, 2).map((habit) => (
-            <div key={habit.id} className="card p-4 flex justify-between items-center bg-white/[0.01] border-white/5">
-              <div className="flex items-center gap-4">
-                <div className={`w-2 h-2 rounded-full ${habit.streak > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-white/10'}`} />
-                <span className="text-xs font-bold text-white">{habit.name}</span>
+            <div key={habit.id} className="card p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${habit.streak > 0 ? 'bg-primary shadow-[0_0_8px_rgba(244,114,182,0.4)]' : 'bg-slate-200'}`} />
+                <span className="text-sm font-bold text-text">{habit.name}</span>
               </div>
-              <span className="text-[9px] font-black text-dim tracking-widest">{habit.streak}D STREAK</span>
+              <span className="text-[10px] font-bold text-dim bg-slate-50 px-2 py-1 rounded">{habit.streak} 일째 달성중</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* 5. Active Protocol Routine */}
-      <section className="mb-20 px-2">
+      < section className="mb-20 px-2" >
         <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-6 uppercase pl-2 flex justify-between items-center">
           Next Mission Protocol
           <span className="px-3 py-1 bg-electric-blue/10 text-electric-blue rounded-full text-[8px] font-black tracking-widest border border-electric-blue/20">
@@ -361,10 +332,10 @@ const HomeView = () => {
             COMPLETE PROTOCOL
           </button>
         </div>
-      </section>
+      </section >
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-    </div>
+    </div >
   );
 };
 
