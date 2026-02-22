@@ -167,6 +167,8 @@ export const RoutineProvider = ({ children }) => {
         const visceralFatTrend = latest.visceralFat > 10 ? 'high' : 'stable';
         const waterTrend = latest.bodyWater < 55 ? 'low' : 'stable';
 
+        let interpretation, status;
+
         // Junsemi Specific Interpretation Logic
         if (latest.visceralFat >= 14) {
             interpretation = "내장지방 지수가 매우 높습니다(14). 유산소 운동과 저탄수화물 식단이 최우선입니다!";
