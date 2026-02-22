@@ -362,9 +362,12 @@ const HomeView = () => {
           </button>
         </div>
       </section>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 };
+
 
 // --- [RecordView] Intelligent Diet Logging & Habits ---
 const RecordView = () => {
@@ -924,6 +927,142 @@ const ChatView = () => {
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// --- [SettingsModal] Profile & Data Management (Spring Theme Compatible) ---
+const SettingsModal = ({ onClose }) => {
+  const { profile, updateProfile } = useRoutine();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempProfile, setTempProfile] = useState(profile);
+
+  const handleSave = () => {
+    updateProfile(tempProfile);
+    setIsEditing(false);
+    confetti({ particleCount: 50, colors: ['#F472B6'] });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex flex-col justify-end animate-in fade-in duration-300">
+      <div className="absolute inset-0 flex" onClick={onClose} />
+      <div className="bg-card rounded-t-[32px] p-6 pb-12 w-full max-w-md mx-auto relative flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-500 border-t border-white/10 shadow-[0_-20px_50px_rgba(51,65,85,0.05)]">
+
+        {/* Drag Handle */}
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 shrink-0 cursor-pointer" onClick={onClose} />
+
+        <div className="flex justify-between items-center mb-8 shrink-0">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text">System Settings</h2>
+          <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-dim hover:text-text transition-colors">
+            <ChevronRight className="rotate-90" size={20} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto no-scrollbar pb-10">
+          {/* Identity Card */}
+          <div className="card p-0 overflow-hidden mb-6 border-white/10" onClick={() => { setTempProfile(profile); setIsEditing(true); }}>
+            <div className="flex items-center gap-4 p-5 cursor-pointer active:bg-white/5 transition-colors group">
+              <div className="w-12 h-12 rounded-2xl bg-electric-blue/10 flex items-center justify-center text-electric-blue group-hover:bg-electric-blue group-hover:text-white transition-colors">
+                <User size={20} />
+              </div>
+              <div className="flex-1">
+                <div className="text-base font-bold text-text mb-0.5">Profile Identity</div>
+                <div className="text-xs text-dim tracking-wide">{profile.name} · {profile.height}cm · {profile.weight}kg</div>
+              </div>
+              <div className="p-2 rounded-full bg-white/5 text-dim group-hover:bg-white/10 group-hover:text-text transition-colors">
+                <ChevronRight size={16} />
+              </div>
+            </div>
+          </div>
+
+          {/* System Options */}
+          <h3 className="text-[10px] font-black text-dim tracking-widest uppercase mb-3 pl-2">Data & Preferences</h3>
+          <div className="card p-0 overflow-hidden mb-8 border-white/10">
+            {[
+              { icon: <Heart size={18} />, label: 'HealthKit Sync', sub: 'Biometric link established', color: 'text-rose-400', bg: 'bg-rose-400/10' },
+              { icon: <Settings size={18} />, label: 'Interface Theme', sub: 'Spring mode active', color: 'text-purple-400', bg: 'bg-purple-400/10' },
+              { icon: <ClipboardList size={18} />, label: 'Data Export', sub: 'Download protocol history', color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
+            ].map((item, i) => (
+              <div key={i} className={`flex items-center gap-4 p-4 cursor-not-allowed opacity-80 hover:opacity-100 transition-opacity ${i !== 2 ? 'border-b border-white/5' : ''}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.bg} ${item.color}`}>
+                  {item.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-text">{item.label}</div>
+                  <div className="text-[10px] text-dim tracking-wide mt-0.5">{item.sub}</div>
+                </div>
+                <div className="text-[9px] font-black text-dim uppercase bg-white/5 px-2 py-1 rounded">Soon</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto px-2">
+            <button className="w-full py-4 rounded-xl border border-rose-500/30 text-rose-500/80 font-black tracking-widest text-[10px] uppercase hover:bg-rose-500/10 transition-colors">
+              Reset Protocol Data
+            </button>
+            <p className="text-center text-[9px] font-black text-dim tracking-[0.4em] uppercase opacity-30 mt-6">Anti-Gravity // Build 4.5.1</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nested Edit Modal */}
+      {isEditing && (
+        <div className="absolute inset-0 bg-card z-[2100] flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="p-6 border-b border-white/10 flex items-center gap-4 bg-white/90 backdrop-blur-md">
+            <button onClick={() => setIsEditing(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-text hover:bg-white/10 transition-colors">
+              <ChevronRight className="rotate-180" size={20} />
+            </button>
+            <h3 className="text-xl font-black uppercase tracking-tighter text-text">Edit Identity</h3>
+          </div>
+
+          <div className="p-6 flex-1 overflow-y-auto">
+            <div className="w-24 h-24 rounded-3xl bg-electric-blue/10 mx-auto flex items-center justify-center text-electric-blue mb-10 border border-electric-blue/30 shadow-[0_0_30px_rgba(244,114,182,0.15)] relative">
+              <User size={48} />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-electric-blue rounded-full flex items-center justify-center text-white shadow-lg">
+                <Camera size={14} />
+              </div>
+            </div>
+
+            <div className="space-y-6 mb-10">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-electric-blue tracking-widest uppercase pl-2">Codename</label>
+                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-text font-bold text-lg focus:border-electric-blue outline-none transition-all focus:bg-white/10 placeholder:text-dim" value={tempProfile.name} onChange={e => setTempProfile({ ...tempProfile, name: e.target.value })} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-electric-blue tracking-widest uppercase pl-2">Height (cm)</label>
+                  <input type="number" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-text font-bold text-lg focus:border-electric-blue outline-none transition-all focus:bg-white/10 text-center" value={tempProfile.height} onChange={e => setTempProfile({ ...tempProfile, height: parseFloat(e.target.value) })} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-electric-blue tracking-widest uppercase pl-2">Weight (kg)</label>
+                  <input type="number" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-text font-bold text-lg focus:border-electric-blue outline-none transition-all focus:bg-white/10 text-center" value={tempProfile.weight} onChange={e => setTempProfile({ ...tempProfile, weight: parseFloat(e.target.value) })} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-dim tracking-widest uppercase pl-2">Activity Level</label>
+                <select
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-text font-bold focus:border-electric-blue outline-none transition-all appearance-none"
+                  value={tempProfile.activityLevel.toString()}
+                  onChange={e => setTempProfile({ ...tempProfile, activityLevel: parseFloat(e.target.value) })}
+                >
+                  <option value="1.2">Sedentary (1.2x)</option>
+                  <option value="1.375">Lightly Active (1.375x)</option>
+                  <option value="1.55">Moderately Active (1.55x)</option>
+                  <option value="1.725">Very Active (1.725x)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border-t border-white/5 bg-space-gray shrink-0">
+            <button className="w-full py-5 rounded-2xl bg-electric-blue text-white font-black tracking-widest text-sm uppercase shadow-[0_10px_30px_rgba(244,114,182,0.3)] active:scale-95 transition-all" onClick={handleSave}>
+              Confirm Update
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
