@@ -3,7 +3,7 @@ import { useRoutine } from './RoutineContext';
 import {
   Flame, Clock, CheckCircle2, Activity, Briefcase, Home, Info,
   User, ClipboardList, TrendingUp, Settings, ChevronRight, AlertCircle,
-  Camera, Award, Mic, Heart, Moon, Footprints, ArrowUpRight, Compass, Zap, BarChart3, Terminal
+  Camera, Award, Mic, Heart, Moon, Footprints, ArrowUpRight, Compass, Zap, BarChart3, MessageSquare, Send, Bot
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -126,8 +126,10 @@ const ConditionModal = ({ onSave }) => {
 // --- [HomeView] Anti-Gravity Futuristic Dashboard ---
 const HomeView = () => {
   const {
-    profile, agScore, healthKit, ptPlan, analysis, completeWorkout, addExerciseEntry
+    profile, agScore, healthKit, ptPlan, analysis, completeWorkout, addExerciseEntry, habits
   } = useRoutine();
+
+  if (!analysis) return <div className="p-10 text-center animate-pulse text-dim">INITIALIZING ORBIT...</div>;
 
   const handleCompleteSession = () => {
     addExerciseEntry({
@@ -140,197 +142,223 @@ const HomeView = () => {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
   };
 
+  const [showSettings, setShowSettings] = useState(false);
+
   return (
-    <div className="content-wrapper pb-32">
-      <header className="mb-8 pt-4 flex justify-between items-center px-2">
+    <div className="content-wrapper pb-32 animate-in fade-in duration-700">
+      <header className="mb-10 pt-6 flex justify-between items-center px-2">
         <div>
-          <h1 className="text-3xl font-black tracking-tighter text-white italic">ANTIGRAVITY</h1>
-          <p className="text-dim text-xs font-bold uppercase tracking-widest">{profile.name} // Status Active</p>
+          <h1 className="text-4xl font-black tracking-tighter text-white italic leading-none">ORBIT</h1>
+          <p className="text-dim text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Active Protocol: {analysis.currentMode}</p>
         </div>
-        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-          <User size={24} className="text-electric-blue" />
+        <div className="relative">
+          <div
+            className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden relative group cursor-pointer"
+            onClick={() => setShowSettings(true)}
+          >
+            <User size={20} className="text-electric-blue transition-transform group-active:scale-90" />
+            <div className="absolute inset-0 bg-electric-blue/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-space-gray" />
         </div>
       </header>
 
-      {/* Futuristic Gravity Score Card */}
-      <section className="relative mb-10">
-        <div className="card glass flex flex-col items-center py-10 relative overflow-hidden">
-          {/* Background Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-electric-blue/20 blur-[60px] rounded-full" />
+      {/* 1. Macro Visualizer (Inout Benchmarked) */}
+      <section className="mb-8 px-2">
+        <div className="card glass p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
+            <Flame size={120} />
+          </div>
 
-          <div className="relative w-48 h-48 mb-6">
-            <svg className="w-full h-full -rotate-90">
-              <circle cx="96" cy="96" r="88" stroke="rgba(255,255,255,0.05)" strokeWidth="12" fill="none" />
-              <circle cx="96" cy="96" r="88" stroke="url(#agGradient)" strokeWidth="12" fill="none" strokeDasharray="552.92" strokeDashoffset={552.92 * (1 - agScore / 100)} strokeLinecap="round" />
-              <defs>
-                <linearGradient id="agGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#00E5FF" />
-                  <stop offset="100%" stopColor="#007AFF" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-              <span className="text-5xl font-black text-white">{agScore}</span>
-              <p className="text-[10px] text-dim font-bold tracking-widest uppercase mt-1">Gravity Score</p>
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <p className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-1">Calories Remaining</p>
+              <h2 className="text-5xl font-black text-white italic tracking-tighter">
+                {analysis.remainingKcal} <span className="text-sm not-italic text-dim uppercase">kcal</span>
+              </h2>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-1">Total Intake</p>
+              <p className="text-xl font-black text-electric-blue italic">{analysis.intake} <span className="text-[10px] not-italic text-dim opacity-60">/ {analysis.tdee}</span></p>
             </div>
           </div>
 
-          {/* Level System UI */}
-          <div className="w-full px-10 mb-2">
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-[10px] font-black text-electric-blue tracking-widest">LV. {profile.level}</span>
-              <span className="text-[10px] font-black text-dim">{profile.xp} / {profile.nextLevelXp} XP</span>
-            </div>
-            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-              <div
-                className="h-full bg-gradient-to-r from-electric-blue to-blue-500 transition-all duration-1000"
-                style={{ width: `${analysis?.xpProgress || 0}%` }}
-              />
-            </div>
+          <div className="space-y-5">
+            {[
+              { label: 'Carb', cur: analysis.currentMacros.carb, tar: analysis.targetMacros.carb, color: 'bg-sky-400', glow: 'shadow-[0_0_10px_rgba(56,189,248,0.4)]' },
+              { label: 'Protein', cur: analysis.currentMacros.protein, tar: analysis.targetMacros.protein, color: 'bg-emerald-400', glow: 'shadow-[0_0_10px_rgba(52,211,153,0.4)]' },
+              { label: 'Fat', cur: analysis.currentMacros.fat, tar: analysis.targetMacros.fat, color: 'bg-rose-400', glow: 'shadow-[0_0_10px_rgba(251,113,133,0.4)]' }
+            ].map((macro, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black text-dim uppercase tracking-widest">{macro.label}</span>
+                  <span className="text-xs font-black text-white italic">{macro.cur}g <span className="text-[9px] text-dim not-italic opacity-40">/ {macro.tar}g</span></span>
+                </div>
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${macro.color} ${macro.glow} transition-all duration-1000 ease-out`}
+                    style={{ width: `${Math.min(100, (macro.cur / macro.tar) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-
-          <p className="text-sm text-dim text-center px-4 leading-relaxed mt-4">
-            현재 중력을 <span className="text-white font-bold">{agScore}%</span> 정복하셨습니다.<br />
-            {agScore > 50 ? '행성 탈출 속도에 진입하고 있습니다!' : '지면을 박차고 오를 준비가 되었습니다.'}
-          </p>
         </div>
       </section>
-      {/* Smart Interpretation Card (Junsemi PRD 5) */}
-      {analysis && (
-        <section className="mb-10 px-2 animate-in fade-in zoom-in duration-500">
-          <div className={`card p-6 border-l-4 ${analysis.status === 'positive' ? 'border-l-emerald-500 bg-emerald-500/5' : analysis.status === 'warning' ? 'border-l-rose-500 bg-rose-500/5' : analysis.status === 'caution' ? 'border-l-amber-500 bg-amber-500/5' : 'border-l-electric-blue'}`}>
-            <h4 className="text-[10px] font-black text-dim tracking-[0.2em] uppercase mb-2">
-              {analysis.currentMode} Intelligence
-            </h4>
-            <p className="text-sm font-black text-white leading-relaxed tracking-tight italic">
-              "{analysis.interpretation}"
-            </p>
-          </div>
-        </section>
-      )}
 
-      {/* Protocol Analysis Card */}
-      {analysis && (
-        <section className="mb-10 px-2">
-          <div className="card p-8 bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Activity size={80} className="text-electric-blue" />
-            </div>
-            <div className="flex justify-between items-start mb-10">
-              <div>
-                <span className={`text-space-gray text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase mb-2 inline-block ${analysis.status === 'positive' ? 'bg-emerald-500' : 'bg-electric-blue'}`}>
-                  {analysis.currentMode} Active
-                </span>
-                <h3 className="text-3xl font-black italic tracking-tighter mt-2">METRIC PROTOCOL</h3>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Target BMR</p>
-                <p className="text-2xl font-black text-white italic">{analysis.bmr} <span className="text-[10px] not-italic text-dim">kcal</span></p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Target Protein</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-white italic">{analysis.targetProtein}</span>
-                  <span className="text-xs font-bold text-dim uppercase">g</span>
-                </div>
-              </div>
-              <div className="space-y-1 text-right">
-                <p className="text-[10px] font-black text-dim tracking-widest uppercase">Target TDEE</p>
-                <div className="flex items-baseline gap-1 justify-end">
-                  <span className="text-2xl font-black text-white italic">{analysis.tdee}</span>
-                  <span className="text-xs font-bold text-dim uppercase">kcal</span>
-                </div>
-              </div>
+      {/* 2. Biorhythm (Fasting) & Gravity Score Grid */}
+      <div className="grid grid-cols-2 gap-4 mb-8 px-2">
+        {/* Fasting Widget */}
+        <div className="card glass p-6 flex flex-col items-center justify-center relative group cursor-pointer active:scale-95 transition-all">
+          <div className="relative w-24 h-24 mb-4">
+            <svg className="w-full h-full -rotate-90">
+              <circle cx="48" cy="48" r="42" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="none" />
+              <circle
+                cx="48" cy="48" r="42"
+                stroke="#00E5FF" strokeWidth="6" fill="none"
+                strokeDasharray="263.89"
+                strokeDashoffset={263.89 * (1 - analysis.fasting.hoursPassed / analysis.fasting.totalHours)}
+                strokeLinecap="round"
+                className="transition-all duration-1000"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-base font-black text-white leading-none">{analysis.fasting.timer}</span>
+              <p className="text-[7px] text-dim font-bold uppercase mt-1">Left</p>
             </div>
           </div>
-        </section>
-      )}
+          <h4 className="text-[9px] font-black text-electric-blue tracking-[0.2em] uppercase mb-1">{analysis.fasting.state}</h4>
+          <p className="text-[10px] text-dim font-bold">{analysis.fasting.protocol} Fasting</p>
+        </div>
 
-      {/* HealthKit Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
-        {[
-          { label: 'STEPS', val: healthKit.steps, icon: <Footprints size={18} />, color: 'text-green-400' },
-          { label: 'SLEEP', val: `${healthKit.sleepHours}h`, icon: <Moon size={18} />, color: 'text-indigo-400' },
-          { label: 'BPM', val: healthKit.heartRate, icon: <Heart size={18} />, color: 'text-rose-400' }
-        ].map((stat, i) => (
-          <div key={i} className="card p-4 flex flex-col items-center gap-2">
-            <span className={`${stat.color} mb-1 opacity-80`}>{stat.icon}</span>
-            <span className="text-sm font-black text-white tracking-tight">{stat.val}</span>
-            <span className="text-[9px] text-dim font-bold tracking-tighter uppercase">{stat.label}</span>
+        {/* Gravity Score Widget */}
+        <div className="card glass p-6 flex flex-col items-center justify-center">
+          <div className="relative w-24 h-24 mb-4 flex items-center justify-center">
+            <div className="absolute inset-0 bg-electric-blue/5 rounded-full animate-pulse" />
+            <span className="text-4xl font-black text-white italic">{agScore}</span>
           </div>
-        ))}
+          <h4 className="text-[9px] font-black text-dim tracking-[0.2em] uppercase mb-1">Gravity Score</h4>
+          <div className="flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < Math.floor(agScore / 20) ? 'bg-electric-blue' : 'bg-white/10'}`} />
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Supplement Timeline (Junsemi PRD 4) */}
-      {analysis?.supplements && (
-        <section className="mb-12 px-2 animate-in slide-in-from-right duration-700">
-          <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-4 uppercase pl-2">Supplement Lifecycle</h3>
-          <div className="flex flex-col gap-3">
-            <div className="card p-4 flex items-center gap-4 bg-white/[0.02] border-white/5">
-              <div className="w-10 h-10 rounded-xl bg-electric-blue/10 flex items-center justify-center text-electric-blue font-black text-[10px]">PRE</div>
-              <p className="text-xs font-bold text-white tracking-tight">{analysis.supplements.pre}</p>
+      {/* 3. AI Insight Section */}
+      <section className="mb-8 px-2">
+        <div className={`card p-6 border-l-4 overflow-hidden relative ${analysis.status === 'positive' ? 'border-l-emerald-500 bg-emerald-500/5' : analysis.status === 'warning' ? 'border-l-rose-500 bg-rose-500/5' : 'border-l-electric-blue bg-white/[0.02]'}`}>
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-white/5 rounded-2xl text-electric-blue">
+              <Zap size={20} className="animate-pulse" />
             </div>
-            <div className="card p-4 flex items-center gap-4 bg-white/[0.02] border-white/5">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 font-black text-[10px]">INTRA</div>
-              <p className="text-xs font-bold text-white tracking-tight">{analysis.supplements.intra}</p>
-            </div>
-            <div className="card p-4 flex items-center gap-4 bg-white/[0.02] border-white/5 border-l-2 border-l-electric-blue">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-black text-[10px]">POST</div>
-              <p className="text-xs font-bold text-white tracking-tight">{analysis.supplements.post}</p>
+            <div>
+              <h4 className="text-[10px] font-black text-dim tracking-widest uppercase mb-1">AG Intelligence Report</h4>
+              <p className="text-sm font-bold text-white leading-tight italic tracking-tight">
+                "{analysis.interpretation}"
+              </p>
             </div>
           </div>
-        </section>
-      )}
-
-      {/* AI PT Prescription (PRD F3) */}
-      <section className="mb-12 px-2">
-        <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-4 uppercase pl-2 flex justify-between items-center">
-          Today's Routine
-          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${(analysis?.currentMode || ptPlan?.currentMode) === 'Reset' ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]' : (analysis?.currentMode || ptPlan?.currentMode) === 'Recovery' ? 'bg-rose-500 text-white' : (analysis?.currentMode || ptPlan?.currentMode) === 'Overload' ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-electric-blue text-black'}`}>
-            {(analysis?.currentMode || ptPlan?.currentMode || 'Normal').toUpperCase()} MODE
-          </span>
-        </h3>
-        <div className="space-y-4">
-          {ptPlan.recommendations.map((ex, i) => (
-            <div key={i} className="card p-6 flex justify-between items-center border-white/5 hover:border-electric-blue/30 transition-all duration-300">
-              <div className="flex-1">
-                <p className="text-[9px] text-electric-blue font-black tracking-widest uppercase mb-1 opacity-60">#{ex.area}</p>
-                <h4 className="font-black text-white text-lg tracking-tight leading-none mb-2">{ex.name}</h4>
-                <div className="flex gap-3">
-                  <span className="text-xs text-dim font-bold">{ex.sets} SETS</span>
-                  <span className="text-xs text-dim font-bold">{ex.reps} REPS</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-black text-electric-blue italic">{ex.weight}</span>
-                <span className="text-[10px] text-dim font-bold ml-1 uppercase">kg</span>
-              </div>
-            </div>
-          ))}
-          <button className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-black tracking-widest active:scale-95 transition-all text-base mt-4" onClick={handleCompleteSession}>
-            COMPLETE SESSION
-          </button>
         </div>
       </section>
 
-      {/* Emergency Strategy Section (Legacy Data Highlight) */}
+      {/* 4. Activity Mission Hub */}
+      <section className="mb-12 px-2">
+        <div className="flex justify-between items-end mb-4 px-2">
+          <h3 className="text-[10px] font-black text-dim tracking-[0.3em] uppercase">Daily Mission Hub</h3>
+          <span className="text-[10px] font-black text-electric-blue">{habits.filter(h => h.streak > 0).length} / {habits.length} COMPLETED</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { label: 'Steps', val: healthKit.steps, icon: <Footprints size={18} />, color: 'text-emerald-400' },
+            { label: 'Burnt', val: healthKit.burntKcal, icon: <Flame size={18} />, color: 'text-orange-400' },
+            { label: 'Heart', val: healthKit.heartRate, icon: <Heart size={18} />, color: 'text-rose-400' }
+          ].map((stat, i) => (
+            <div key={i} className="card p-4 flex flex-col items-center gap-2 bg-white/[0.02] border-white/5">
+              <span className={`${stat.color} opacity-80`}>{stat.icon}</span>
+              <span className="text-sm font-black text-white">{stat.val}</span>
+              <span className="text-[8px] text-dim font-bold uppercase tracking-tighter">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Habit Summary for Dashboard */}
+        <div className="space-y-3">
+          {habits.slice(0, 2).map((habit) => (
+            <div key={habit.id} className="card p-4 flex justify-between items-center bg-white/[0.01] border-white/5">
+              <div className="flex items-center gap-4">
+                <div className={`w-2 h-2 rounded-full ${habit.streak > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-white/10'}`} />
+                <span className="text-xs font-bold text-white">{habit.name}</span>
+              </div>
+              <span className="text-[9px] font-black text-dim tracking-widest">{habit.streak}D STREAK</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. Active Protocol Routine */}
       <section className="mb-20 px-2">
-        <h3 className="text-xs font-black text-dim tracking-[0.2em] mb-4 uppercase pl-2 flex items-center gap-2">
-          <AlertCircle size={14} className="text-rose-500" /> Emergency Protocols
+        <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-6 uppercase pl-2 flex justify-between items-center">
+          Next Mission Protocol
+          <span className="px-3 py-1 bg-electric-blue/10 text-electric-blue rounded-full text-[8px] font-black tracking-widest border border-electric-blue/20">
+            {analysis.currentMode.toUpperCase()} ACTIVE
+          </span>
         </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <button className="card p-4 bg-rose-500/5 border-rose-500/20 active:scale-95 transition-all text-left">
-            <Flame size={18} className="text-rose-500 mb-2" />
-            <h4 className="text-xs font-bold text-white mb-1">폭식했을 때</h4>
-            <p className="text-[9px] text-dim leading-tight">18시간 단식 전환 및 고강도 공복 유산소 시행</p>
-          </button>
-          <button className="card p-4 bg-amber-500/5 border-amber-500/20 active:scale-95 transition-all text-left">
-            <Activity size={18} className="text-amber-500 mb-2" />
-            <h4 className="text-xs font-bold text-white mb-1">정체기일 때</h4>
-            <p className="text-[9px] text-dim leading-tight">탄수화물 사이클링 및 치팅 데이 처방</p>
+
+        <div className="space-y-4">
+          {ptPlan.recommendations.map((ex, i) => {
+            const isFullyCompleted = ex.completedSets?.length === ex.sets;
+            return (
+              <div key={ex.id || i} className={`card p-6 flex flex-col bg-gradient-to-r ${isFullyCompleted ? 'from-electric-blue/10 to-transparent border-electric-blue/50' : 'from-white/[0.03] to-transparent border-white/5'} transition-all duration-300 group`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-[8px] text-electric-blue font-black tracking-widest uppercase mb-1 opacity-60">Sequence {String(i + 1).padStart(2, '0')}</p>
+                    <h4 className={`font-black text-lg tracking-tighter transition-colors ${isFullyCompleted ? 'text-electric-blue' : 'text-white group-hover:text-electric-blue/80'}`}>{ex.name}</h4>
+                    <p className="text-[10px] text-dim font-bold mt-1 uppercase tracking-tighter">Target: {ex.reps} Reps · {ex.weight}kg</p>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <div className="flex items-center gap-1">
+                      <span className={`text-2xl font-black italic transition-colors ${isFullyCompleted ? 'text-electric-blue text-shadow-[0_0_10px_rgba(0,229,255,0.5)]' : 'text-white'}`}>{ex.completedSets?.length || 0}</span>
+                      <span className="text-[10px] text-dim font-bold">/ {ex.sets}</span>
+                    </div>
+                    <span className="text-[8px] text-dim uppercase tracking-widest mt-1">SETS</span>
+                  </div>
+                </div>
+
+                {/* Interactive Set Toggles */}
+                <div className="flex gap-2">
+                  {[...Array(ex.sets)].map((_, setIdx) => {
+                    const isCompleted = ex.completedSets?.includes(setIdx);
+                    return (
+                      <button
+                        key={setIdx}
+                        onClick={() => toggleSet(ex.id, setIdx)}
+                        className={`flex-1 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 active:scale-90 ${isCompleted
+                          ? 'bg-electric-blue border-electric-blue text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                          : 'bg-white/5 border-white/10 text-dim hover:border-electric-blue/50 hover:bg-white/10'
+                          }`}
+                      >
+                        {isCompleted ? <Check size={16} strokeWidth={4} /> : <span className="text-[10px] font-black">{setIdx + 1}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <button
+            className={`w-full py-6 rounded-3xl font-black tracking-[0.2em] active:scale-95 transition-all text-base mt-4 shadow-[0_10px_30px_rgba(0,229,255,0.2)] flex items-center justify-center gap-2 ${ptPlan.recommendations.some(ex => ex.completedSets?.length > 0)
+              ? 'bg-electric-blue text-space-gray hover:bg-white'
+              : 'bg-white/10 text-dim cursor-not-allowed opacity-50'
+              }`}
+            onClick={completeWorkout}
+            disabled={!ptPlan.recommendations.some(ex => ex.completedSets?.length > 0)}
+          >
+            <CheckCircle2 size={20} className={ptPlan.recommendations.some(ex => ex.completedSets?.length > 0) ? 'text-black' : 'text-dim'} />
+            COMPLETE PROTOCOL
           </button>
         </div>
       </section>
@@ -338,290 +366,564 @@ const HomeView = () => {
   );
 };
 
-// --- [RecordView] Minimalism Logging ---
+// --- [RecordView] Intelligent Diet Logging & Habits ---
 const RecordView = () => {
   const {
-    diet, activity, habits, toggleHabit, addDietEntry, carryover
+    diet, activity, habits, lifestyle, addDietEntry, carryover, trackWater, toggleSupplement
   } = useRoutine();
 
-  const handleVoiceInput = () => {
-    const text = window.prompt("식단 내용을 입력하세요 (예: 닭가슴살 샐러드, 현미밥)");
-    if (text) {
-      // Fake AI Processing Animation Mock
-      const processing = window.confirm(`AI 분석 중: "${text}"\n\n- 칼로리: 350kcal\n- 단백질: 28g\n- 탄수화물: 40g\n- 지방: 10g\n\n기록할까요?`);
-      if (processing) {
-        addDietEntry({
-          type: 'Lunch',
-          items: [{ name: text, kcal: 350, protein: 28, carb: 40, fat: 10 }],
-          isAiAnalyzed: true,
-          feedback: "고단백 식단입니다. 점진적 과부하 모드에 적합한 에너지원입니다."
-        });
-        confetti({ particleCount: 50, spread: 80, origin: { y: 0.7 }, colors: ['#00E5FF'] });
-      }
+  const [mealType, setMealType] = useState('Breakfast');
+  const [inputText, setInputText] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+
+  const handleAnalyze = () => {
+    if (!inputText.trim()) return;
+    setIsAnalyzing(true);
+
+    // Simulate AI processing
+    setTimeout(() => {
+      let mockKcal = 0, pt = 0, cb = 0, ft = 0;
+      if (inputText.includes('닭가슴살')) { mockKcal += 120; pt += 25; cb += 0; ft += 2; }
+      else if (inputText.includes('샐러드')) { mockKcal += 150; pt += 5; cb += 20; ft += 7; }
+      else if (inputText.includes('연어')) { mockKcal += 200; pt += 20; cb += 0; ft += 13; }
+      else { mockKcal = 350; pt = 15; cb = 40; ft = 12; }
+
+      setPreview({
+        name: inputText,
+        kcal: mockKcal,
+        protein: pt,
+        carb: cb,
+        fat: ft,
+        feedback: `${inputText}의 대략적인 영양 성분을 분석했습니다. 훌륭한 선택입니다!`
+      });
+      setIsAnalyzing(false);
+    }, 1200);
+  };
+
+  const handleRecord = () => {
+    if (preview) {
+      addDietEntry({
+        type: mealType,
+        items: [preview],
+        isAiAnalyzed: true,
+        feedback: preview.feedback
+      });
+      confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#00E5FF'] });
+      setInputText('');
+      setPreview(null);
     }
   };
 
-  const handleCameraInput = () => {
-    const mockAnalysis = window.confirm("AI Vision 렌즈 기동...\n\n사진에서 '훈제오리 샐러드'를 감지했습니다.\n- 예상 단백질: 22g\n- 예상 지방: 14g\n\n기록에 추가할까요?");
-    if (mockAnalysis) {
-      addDietEntry({
-        type: 'Snack',
-        items: [{ name: '훈제오리 샐러드', kcal: 280, protein: 22, carb: 10, fat: 14 }],
-        isAiAnalyzed: true,
-        feedback: "좋은 지방 공급원입니다. 정체기 돌파를 위한 에너지를 확보하세요."
-      });
-      confetti({ particleCount: 40, colors: ['#00E5FF'] });
-    }
+  const handleQuickAdd = (log) => {
+    addDietEntry({
+      type: mealType, // Add to current selected meal type
+      items: log.items,
+      isAiAnalyzed: false,
+      feedback: "빠른 추가 완료"
+    });
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#A1A1AA'] });
   };
+
+  const todayStr = new Date().toDateString();
 
   return (
-    <div className="content-wrapper">
-      <h2 className="text-2xl font-black mb-8 mt-4 uppercase tracking-tighter">Mission Log</h2>
+    <div className="content-wrapper pb-32 animate-in fade-in duration-500">
+      <h2 className="text-2xl font-black mb-8 mt-4 uppercase tracking-tighter px-2">Log Activity</h2>
 
-      <div className="flex gap-4 mb-10 px-2 mt-4">
-        <button className="flex-1 py-12 rounded-[28px] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-3 active:scale-95 transition-all group" onClick={handleCameraInput}>
-          <Camera size={32} className="text-electric-blue group-active:text-white" />
-          <span className="text-xs font-black tracking-widest uppercase text-dim">AI LENS</span>
-        </button>
-        <button className="flex-1 py-12 rounded-[28px] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-3 active:scale-95 transition-all group" onClick={handleVoiceInput}>
-          <Mic size={32} className="text-electric-blue group-active:text-white" />
-          <span className="text-xs font-black tracking-widest uppercase text-dim">Voice Log</span>
-        </button>
-      </div>
+      {/* 1. Intelligent Diet Logging */}
+      <div className="mb-10 px-2 space-y-4">
+        {/* Meal Type Selector */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+          {mealTypes.map(type => (
+            <button
+              key={type}
+              onClick={() => setMealType(type)}
+              className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${mealType === type
+                ? 'bg-electric-blue text-black shadow-[0_0_15px_rgba(0,229,255,0.4)] border border-electric-blue'
+                : 'bg-white/5 text-dim border border-white/10 hover:bg-white/10'
+                }`}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
 
-      <div className="space-y-4 px-2">
-        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-2 mb-2">Recent Nutrition Log</h3>
-        {diet.logs.length === 0 ? (
-          <div className="card p-10 text-center border-dashed border-white/5">
-            <p className="text-xs text-dim italic">기록된 식단이 없습니다.<br />AI 렌즈나 음성으로 기록해 보세요.</p>
+        {/* Smart Input Card */}
+        <div className="card glass p-1 bg-gradient-to-r from-electric-blue/20 via-transparent to-transparent border-electric-blue/30 relative focus-within:ring-1 focus-within:ring-electric-blue">
+          <div className="bg-space-gray/80 backdrop-blur-md rounded-[18px] p-4 flex flex-col gap-4">
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="무엇을 드셨나요? (ex. 닭가슴살 샐러드)"
+              className="bg-transparent border-none text-white placeholder:text-dim/50 resize-none h-20 outline-none text-sm leading-relaxed"
+            />
+
+            <div className="flex justify-between items-center border-t border-white/10 pt-4 mt-2">
+              <button className="w-10 h-10 rounded-full flex items-center justify-center text-electric-blue bg-electric-blue/10 hover:bg-electric-blue hover:text-black transition-colors">
+                <Camera size={18} />
+              </button>
+              <button
+                onClick={handleAnalyze}
+                disabled={!inputText.trim()}
+                className="px-6 py-2.5 rounded-full bg-electric-blue text-black font-black text-[10px] tracking-widest disabled:opacity-50 disabled:bg-white/10 disabled:text-dim transition-colors"
+              >
+                ANALYZE
+              </button>
+            </div>
           </div>
-        ) : (
-          diet.logs.slice(0, 3).map((log, idx) => {
-            const totalKcal = log.items.reduce((sum, item) => sum + item.kcal, 0);
-            const totalProtein = log.items.reduce((sum, item) => sum + item.protein, 0);
-            return (
-              <div key={log.id} className="card p-6 flex justify-between items-center group">
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Flame size={20} className="text-rose-500 opacity-60" />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-white text-lg tracking-tight">{log.items[0]?.name || "기록된 식사"}</h4>
-                    <p className="text-[10px] text-dim font-bold uppercase tracking-widest">
-                      {totalProtein}g Protein · {totalKcal} kcal
-                    </p>
-                  </div>
-                </div>
-                <div className="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center">
-                  <span className="text-[10px] font-black text-electric-blue">{log.aiAnalysis.isPhotoAnalyzed ? 'AI' : ''}</span>
-                </div>
-              </div>
-            );
-          })
+        </div>
+
+        {/* AI Preview Card */}
+        {isAnalyzing && (
+          <div className="card glass p-6 flex flex-col items-center justify-center gap-4 animate-pulse">
+            <div className="w-8 h-8 rounded-full border-2 border-electric-blue border-t-transparent animate-spin" />
+            <p className="text-[10px] font-black tracking-widest text-electric-blue uppercase">Marlang Vision 연동 중...</p>
+          </div>
         )}
 
-        {/* Workout Log (MVP Category 3) */}
-        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mt-12 mb-2">Workout Log</h3>
+        {preview && !isAnalyzing && (
+          <div className="card bg-gradient-to-br from-electric-blue/10 to-transparent border-electric-blue/50 p-6 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-3 mb-4">
+              <Zap size={20} className="text-electric-blue" />
+              <h4 className="text-sm font-black text-white italic">Analysis Complete</h4>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              <div className="col-span-1 flex flex-col items-center justify-center bg-white/5 rounded-xl p-3 border border-white/10">
+                <span className="text-lg font-black text-white">{preview.kcal}</span>
+                <span className="text-[8px] font-bold text-dim uppercase tracking-widest mt-1">KCAL</span>
+              </div>
+              {[
+                { label: 'PRO', val: preview.protein, color: 'text-emerald-400' },
+                { label: 'CARB', val: preview.carb, color: 'text-sky-400' },
+                { label: 'FAT', val: preview.fat, color: 'text-rose-400' }
+              ].map((m, i) => (
+                <div key={i} className="flex flex-col items-center justify-center bg-white/5 rounded-xl p-3 border border-white/10">
+                  <span className={`text-base font-black ${m.color}`}>{m.val}g</span>
+                  <span className="text-[8px] font-bold text-dim uppercase tracking-widest mt-1">{m.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleRecord}
+              className="w-full py-4 rounded-xl bg-electric-blue text-black font-black tracking-[0.2em] uppercase shadow-[0_0_20px_rgba(0,229,255,0.3)] active:scale-95 transition-all"
+            >
+              SAVE RECORD
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="px-2">
+        {/* Recent Meals (Quick Add) */}
+        {diet.logs.length > 0 && (
+          <>
+            <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mb-2">Recent Logs</h3>
+            {diet.logs.slice(0, 3).map((log) => {
+              const totalProtein = log.items.reduce((acc, item) => acc + (item.protein || 0), 0);
+              const totalKcal = log.items.reduce((acc, item) => acc + (item.kcal || 0), 0);
+              return (
+                <div key={log.id} className="card p-4 flex justify-between items-center bg-white/[0.01] border-white/5 hover:border-white/20 transition-colors mb-2 group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <Flame size={16} className="text-amber-500 opacity-80" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm tracking-tight">{log.items[0]?.name || "Meal Entry"}</h4>
+                      <p className="text-[9px] text-dim font-bold uppercase tracking-widest mt-0.5">
+                        {totalProtein}g PRO · {totalKcal} KCAL
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleQuickAdd(log)}
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-dim bg-white/5 hover:bg-electric-blue hover:text-black hover:border-electric-blue transition-all"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Workout Log & Habits (Preserved from original) */}
+        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mt-8 mb-2">Workout Status</h3>
         {activity.workouts.length === 0 ? (
-          <div className="card p-10 text-center border-dashed border-white/5">
-            <p className="text-xs text-dim italic">기록된 운동이 없습니다.<br />오늘의 세션을 완료해 보세요.</p>
+          <div className="card p-6 text-center border-dashed border-white/5 bg-transparent mb-8">
+            <p className="text-[10px] text-dim font-bold uppercase opacity-50">NO SESSIONS LOGGED TODAY</p>
           </div>
         ) : (
-          activity.workouts.slice(0, 2).map((workout, idx) => (
-            <div key={workout.id} className="card p-6 flex justify-between items-center group">
-              <div className="flex items-center gap-5">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Activity size={20} className="text-electric-blue opacity-60" />
+          activity.workouts.slice(0, 1).map((workout) => (
+            <div key={workout.id} className="card p-5 flex justify-between items-center bg-white/[0.02] border-white/5 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                  <Activity size={16} className="text-purple-400" />
                 </div>
                 <div>
-                  <h4 className="font-black text-white text-lg tracking-tight">{workout.exercises[0]?.name || "기타 운동"}</h4>
-                  <p className="text-[10px] text-dim font-bold uppercase tracking-widest">
-                    {workout.totalDurationMin} min · {workout.totalBurntKcal} kcal
+                  <h4 className="font-bold text-white text-sm">{workout.exercises[0]?.name || "Workout"}</h4>
+                  <p className="text-[9px] text-dim font-bold uppercase tracking-widest mt-0.5">
+                    {workout.totalBurntKcal} KCAL BURNT
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] font-black text-electric-blue">DONE</span>
-              </div>
+              <span className="text-[9px] font-black text-electric-blue px-2 py-1 bg-electric-blue/10 rounded-md">COMPLETED</span>
             </div>
           ))
         )}
 
-        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mt-12 mb-2">Habit Stacking</h3>
-        {habits.map(habit => (
-          <div key={habit.id} className="card p-5 flex justify-between items-center pointer-events-auto" onClick={() => toggleHabit(habit.id)}>
-            <div style={{ flex: 1 }}>
-              <p className="text-[9px] text-electric-blue font-bold tracking-widest mb-1 italic">#{habit.trigger}</p>
-              <h4 className="font-bold text-white text-base">{habit.name}</h4>
+        {/* 2. Lifestyle & Habits Tracker (New Category 6 Feature) */}
+        <h3 className="text-[10px] font-black text-dim tracking-widest uppercase pl-4 mb-2 flex justify-between items-center">
+          Lifestyle & Habits
+          <span className="text-[8px] text-electric-blue">XP BOOST ACTIVE</span>
+        </h3>
+
+        {/* Water Intake Tracker */}
+        <div className="card glass p-6 mb-4 relative overflow-hidden group">
+          {/* Water Fill Background effect */}
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-blue-500/10 transition-all duration-1000 ease-in-out z-0"
+            style={{ height: `${(lifestyle.water.intake / lifestyle.water.target) * 100}%` }}
+          />
+
+          <div className="relative z-10 flex justify-between items-center">
+            <div>
+              <h4 className="text-sm font-bold text-white mb-1">Water Intake</h4>
+              <p className="text-[10px] text-dim font-bold uppercase tracking-widest">{lifestyle.water.intake} / {lifestyle.water.target} Glasses</p>
+            </div>
+
+            <div className="flex gap-2">
+              {[...Array(lifestyle.water.target)].map((_, i) => (
+                <div
+                  key={i}
+                  onClick={trackWater}
+                  className={`w-6 h-8 rounded-b-lg border-2 cursor-pointer transition-all duration-300 ${i < lifestyle.water.intake
+                    ? 'bg-blue-400 border-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.5)]'
+                    : 'bg-white/5 border-white/10 hover:border-blue-400/50'
+                    }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Supplements/Daily Routines */}
+        <div className="grid grid-cols-2 gap-4">
+          {lifestyle.supplements.map((sup, i) => {
+            const isCompleted = sup.lastCompleted === todayStr;
+            return (
+              <div
+                key={sup.id}
+                onClick={() => toggleSupplement(sup.id)}
+                className={`card p-4 cursor-pointer transition-all duration-300 active:scale-95 border ${isCompleted
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                  }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  {sup.name.includes("비타민") || sup.name.includes("유산균") ? <Briefcase size={16} className={isCompleted ? "text-emerald-400" : "text-dim"} /> : <Heart size={16} className={isCompleted ? "text-emerald-400" : "text-dim"} />}
+                  {isCompleted && <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-400/10 px-1 py-0.5 rounded">DONE +15XP</span>}
+                </div>
+                <h4 className={`text-xs font-bold ${isCompleted ? 'text-white' : 'text-dim'}`}>{sup.name}</h4>
+                <p className="text-[8px] text-dim/60 font-black uppercase tracking-widest mt-1">{sup.amount}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- [ReportView] Visual SVG Charts & InBody Analytics ---
+const ReportView = () => {
+  const { healthData, analysis, profile } = useRoutine();
+
+  // Calculate points for the Weight Trend chart
+  const history = [...healthData.inbodyHistory].reverse(); // oldest to newest for chart left-to-right
+  const minWeight = Math.min(...history.map(d => d.weight)) - 2;
+  const maxWeight = Math.max(...history.map(d => d.weight)) + 2;
+  const range = maxWeight - minWeight;
+
+  const width = 300;
+  const height = 120;
+
+  const points = history.map((d, i) => {
+    const x = (i / (history.length - 1)) * width;
+    const y = height - ((d.weight - minWeight) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // For Area Chart
+  const areaPoints = `${points} ${width},${height} 0,${height}`;
+
+  return (
+    <div className="content-wrapper pb-32 animate-in fade-in duration-500">
+      <h2 className="text-2xl font-black mb-8 mt-4 uppercase tracking-tighter px-2">Analytics</h2>
+
+      {/* 0. Body Insight Card (New Feature) */}
+      <section className="mb-6 px-2">
+        <div className="card bg-gradient-to-br from-electric-blue/10 to-transparent border-electric-blue/30 p-6 relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 text-electric-blue/10 rotate-12 group-hover:rotate-0 transition-transform duration-700">
+            <Activity size={80} />
+          </div>
+          <h4 className="text-[10px] font-black text-electric-blue tracking-widest uppercase mb-2">Body Insight</h4>
+          <h3 className="text-lg font-black text-white leading-tight mb-2 tracking-tighter">{analysis.bodyInsight.title}</h3>
+          <p className="text-xs text-dim font-medium leading-relaxed max-w-[90%]">{analysis.bodyInsight.text}</p>
+        </div>
+      </section>
+
+      {/* 1. InBody Composition (Enhanced Sliders) */}
+      <section className="mb-6 px-2">
+        <div className="card glass p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <div className="flex justify-between items-end mb-8">
+            <h4 className="text-sm font-black text-white uppercase tracking-tighter">InBody Composition</h4>
+            <span className="text-[9px] text-electric-blue font-black uppercase tracking-widest px-2 py-0.5 bg-electric-blue/10 rounded-sm">Latest Sync</span>
+          </div>
+
+          <div className="space-y-6">
+            {[
+              { label: 'Skeletal Muscle', val: healthData.inbodyHistory[0]?.muscleMass, target: 35, unit: 'kg', color: 'bg-emerald-400', glow: 'shadow-[0_0_10px_rgba(52,211,153,0.5)]' },
+              { label: 'Body Fat', val: healthData.inbodyHistory[0]?.fat, target: 12, unit: 'kg', color: 'bg-rose-400', glow: 'shadow-[0_0_10px_rgba(251,113,133,0.5)]' },
+              { label: 'Weight', val: healthData.inbodyHistory[0]?.weight, target: profile.targetWeight, unit: 'kg', color: 'bg-electric-blue', glow: 'shadow-[0_0_10px_rgba(0,229,255,0.5)]' },
+            ].map((item, i) => (
+              <div key={i} className="space-y-3 relative group">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black text-dim uppercase tracking-tighter">{item.label}</span>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-white italic">{item.val}</span>
+                    <span className="text-[9px] text-dim not-italic uppercase ml-0.5">{item.unit}</span>
+                  </div>
+                </div>
+
+                {/* Advanced Slider Bar */}
+                <div className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                  {/* Target Marker */}
+                  <div
+                    className="absolute top-0 bottom-0 w-1 bg-white/30 z-10"
+                    style={{ left: `${Math.min(100, (item.target / (item.target * 1.5)) * 100)}%` }}
+                  />
+                  {/* Fill Bar */}
+                  <div
+                    className={`h-full ${item.color} ${item.glow} transition-all duration-1000 ease-out`}
+                    style={{ width: `${Math.min(100, (item.val / (item.target * 1.5)) * 100)}%` }}
+                  />
+                </div>
+                {/* Target Label */}
+                <div className="flex justify-between mt-1 px-1">
+                  <span className="text-[8px] text-dim/50 uppercase font-bold tracking-widest">Target: {item.target}{item.unit}</span>
+                  <span className="text-[8px] text-white/50 uppercase font-bold tracking-widest">{((item.val / item.target) * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Weight Trend (Area Chart) */}
+      <section className="mb-6 px-2">
+        <div className="card glass p-6">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h4 className="text-sm font-black text-white uppercase tracking-tighter mb-1">Weight Trend</h4>
+              <p className="text-[9px] text-dim tracking-widest uppercase font-bold">Past 3 Months</p>
             </div>
             <div className="text-right">
-              <span className="text-xl font-black text-white">{habit.streak}</span>
-              <span className="text-[10px] text-dim ml-1">Days</span>
+              <span className="text-2xl font-black text-electric-blue italic">{healthData.inbodyHistory[0]?.weight}</span>
+              <span className="text-[10px] text-dim font-bold ml-1 uppercase">kg</span>
             </div>
           </div>
-        ))}
 
-        {/* Carryover Items */}
-        {carryover.length > 0 && (
-          <div className="mt-8 space-y-4">
-            <h3 className="text-[10px] font-black text-rose-400 tracking-widest uppercase pl-2 mb-2 italic">Carryover Missions</h3>
-            {carryover.map((item, i) => (
-              <div key={i} className="card p-5 border-rose-500/20 bg-rose-500/5 flex justify-between items-center">
-                <div>
-                  <h4 className="font-bold text-white text-base">{item.name}</h4>
-                  <p className="text-[9px] text-rose-400 font-bold uppercase tracking-tighter">이월된 항목</p>
-                </div>
-                <CheckCircle2 size={24} className="text-rose-500 opacity-40" />
-              </div>
-            ))}
+          <div className="relative h-40 bg-white/[0.02] rounded-2xl p-4 overflow-hidden border border-white/5">
+            {/* Y-axis guidelines */}
+            <div className="absolute inset-0 flex flex-col justify-between py-4 px-2 pointer-events-none opacity-20">
+              <div className="border-t border-dashed border-white/30 w-full"></div>
+              <div className="border-t border-dashed border-white/30 w-full"></div>
+              <div className="border-t border-dashed border-white/30 w-full"></div>
+            </div>
+
+            <svg viewBox={`0 0 ${width} ${height + 20}`} className="w-full h-full drop-shadow-[0_0_15px_rgba(0,229,255,0.2)] overflow-visible">
+              <defs>
+                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              <polygon points={areaPoints} fill="url(#areaGradient)" />
+              <polyline fill="none" stroke="#00E5FF" strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" />
+
+              {history.map((d, i) => {
+                const x = (i / (history.length - 1)) * width;
+                const y = height - ((d.weight - minWeight) / range) * height;
+                return (
+                  <g key={i}>
+                    {/* Glow and point */}
+                    <circle cx={x} cy={y} r="6" fill="#00E5FF" opacity="0.3" className="animate-pulse" />
+                    <circle cx={x} cy={y} r="3" fill="#FFFFFF" stroke="#00E5FF" strokeWidth="2" />
+                    {/* Value Label (only first and last to avoid clutter) */}
+                    {(i === 0 || i === history.length - 1) && (
+                      <text x={x} y={y - 12} fill="#A1A1AA" fontSize="10" fontWeight="bold" textAnchor={i === 0 ? "start" : "end"}>
+                        {d.weight}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* 3. Summary Stats (BMI added) */}
+      <section className="px-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="card p-5 border-t-2 border-t-electric-blue/50 bg-gradient-to-b from-electric-blue/5 to-transparent">
+            <p className="text-[10px] text-dim font-black uppercase tracking-widest mb-1">BMI Index</p>
+            <div className="flex items-end gap-2">
+              <p className="text-2xl font-black text-white">{analysis.bmi}</p>
+              <p className={`text-[10px] font-black uppercase mb-1 ${analysis.bmiStatus === 'Normal' ? 'text-emerald-400' :
+                analysis.bmiStatus === 'Underweight' ? 'text-cyan-400' : 'text-rose-400'
+                }`}>{analysis.bmiStatus}</p>
+            </div>
+          </div>
+          <div className="card p-5 border-white/5">
+            <p className="text-[10px] text-dim font-black uppercase tracking-widest mb-1">Rank Level</p>
+            <p className="text-sm font-black text-electric-blue uppercase mt-1">Level {profile.level}</p>
+            <p className="text-[9px] text-dim uppercase tracking-tighter mt-1">{analysis.agScore > 50 ? 'Stellar Voyager' : 'Ground Zero'}</p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
 
-// --- [ReportView] Visual SVG Charts ---
-const ReportView = () => {
-  const { healthData, agScore } = useRoutine();
-  const weightPoints = healthData.inbodyHistory.map((d, i) => `${i * 100},${150 - (d.weight - 70) * 10}`).join(' ');
+// --- [ChatView] Context-Aware AI Interaction ---
+const ChatView = () => {
+  const { analysis, diet, profile } = useRoutine();
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'ai', text: `안녕하세요 ${profile.name}님! 저는 Anti-Gravity AI 헬스 코치, Marlang입니다. 현재 상태를 바탕으로 맞춤 조언을 해드릴게요. 무엇이 궁금하신가요?` }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  return (
-    <div className="content-wrapper">
-      <h2 className="text-2xl font-black mb-8 mt-4 uppercase tracking-tighter">Analytics</h2>
-
-      <div className="card glass mb-6 p-6">
-        <div className="flex justify-between items-end mb-6">
-          <h4 className="text-sm font-bold text-white italic">InBody Composition</h4>
-          <span className="text-[10px] text-dim font-black uppercase tracking-widest">Latest Sync</span>
-        </div>
-
-        <div className="space-y-6">
-          {[
-            { label: 'Skeletal Muscle', val: healthData.inbodyHistory[0]?.muscleMass, target: 35, unit: 'kg', color: 'bg-emerald-500' },
-            { label: 'Body Fat', val: healthData.inbodyHistory[0]?.fat, target: 15, unit: '%', color: 'bg-rose-500' },
-            { label: 'Visceral Fat', val: healthData.inbodyHistory[0]?.visceralFat, target: 8, unit: 'Level', color: 'bg-amber-500' },
-          ].map((item, i) => (
-            <div key={i} className="space-y-2">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black text-dim uppercase tracking-tighter">{item.label}</span>
-                <span className="text-sm font-black text-white italic">{item.val} <span className="text-[10px] text-dim not-italic uppercase">{item.unit}</span></span>
-              </div>
-              <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${item.color} shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-1000`}
-                  style={{ width: `${Math.min(100, (item.val / (item.target * 2)) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="card glass mb-6 p-6">
-        <div className="flex justify-between items-end mb-6">
-          <h4 className="text-sm font-bold text-white">Weight Trend</h4>
-          <span className="text-[10px] text-dim font-bold">LATEST: {healthData.inbodyHistory[0]?.weight}kg</span>
-        </div>
-        <div className="h-32 bg-white/2 rounded-2xl p-4 overflow-hidden">
-          <svg viewBox="0 0 300 150" className="w-full h-full drop-shadow-[0_0_15px_rgba(0,229,255,0.4)]">
-            <polyline fill="none" stroke="#00E5FF" strokeWidth="4" points={weightPoints} strokeLinecap="round" strokeLinejoin="round" />
-            {healthData.inbodyHistory.map((d, i) => (
-              <circle key={i} cx={i * 100} cy={150 - (d.weight - 70) * 10} r="5" fill="#00E5FF" />
-            ))}
-          </svg>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card p-5">
-          <p className="text-[10px] text-dim font-bold uppercase mb-1">Lifetime Badges</p>
-          <p className="text-2xl font-black text-white">{healthData.badges.length}</p>
-        </div>
-        <div className="card p-5 border-electric-blue/20">
-          <p className="text-[10px] text-dim font-bold uppercase mb-1">Rank Status</p>
-          <p className="text-sm font-black text-electric-blue uppercase">{analysis.agScore > 50 ? 'Stellar Voyager' : 'Ground Zero'}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- [SettingsView] iOS Style Settings + Editable Profile ---
-const SettingsView = () => {
-  const { profile, updateProfile } = useRoutine();
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempProfile, setTempProfile] = useState(profile);
-
-  const handleSave = () => {
-    updateProfile(tempProfile);
-    setIsEditing(false);
-    confetti({ particleCount: 50, colors: ['#00E5FF'] });
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  return (
-    <div className="content-wrapper">
-      <h2 className="text-2xl font-black mb-8 mt-4 uppercase tracking-tighter">System</h2>
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
 
-      <div className="card p-0 overflow-hidden mb-6" onClick={() => { setTempProfile(profile); setIsEditing(true); }}>
-        <div className="flex items-center gap-4 p-5 cursor-pointer active:bg-white/5 transition-colors">
-          <div className="w-12 h-12 rounded-2xl bg-electric-blue/10 flex items-center justify-center text-electric-blue">
-            <User />
+  const handleSend = (text) => {
+    const userText = typeof text === 'string' ? text : inputValue;
+    if (!userText.trim()) return;
+
+    const newUserMsg = { id: Date.now(), sender: 'user', text: userText };
+    setMessages(prev => [...prev, newUserMsg]);
+    setInputValue('');
+    setIsTyping(true);
+
+    // Mock AI Logic based on RoutineContext
+    setTimeout(() => {
+      let aiResponse = "";
+      const lowerInput = userText.toLowerCase();
+
+      if (lowerInput.includes("저녁") || lowerInput.includes("메뉴") || lowerInput.includes("추천") || lowerInput.includes("밥")) {
+        if (analysis.currentMacros.protein < analysis.targetMacros.protein * 0.8) {
+          aiResponse = `오늘 단백질이 목표치보다 ${analysis.targetMacros.protein - analysis.currentMacros.protein}g 더 필요하네요! 저녁 메뉴로는 단백질이 풍부한 닭가슴살 샐러드나 구운 연어, 가벼운 두부 요리를 추천합니다. (남은 여유 칼로리: ${analysis.remainingKcal}kcal)`;
+        } else {
+          aiResponse = `오늘 권장 단백질을 훌륭하게 채우셨군요! 남은 ${analysis.remainingKcal}kcal 내에서 신선한 야채가 듬뿍 들어간 포케나 가벼운 샌드위치는 어떨까요?`;
+        }
+      } else if (lowerInput.includes("운동") || lowerInput.includes("루틴")) {
+        aiResponse = `현재 ${analysis.currentMode} 모드가 활성화되어 있습니다. ${analysis.reason} ORBIT 탭 하단의 미션 프로토콜을 수행해주세요!`;
+      } else if (lowerInput.includes("인바디") || lowerInput.includes("상태") || lowerInput.includes("몸")) {
+        aiResponse = `최근 데이터 분석 결과: ${analysis.bodyInsight.title} \n${analysis.bodyInsight.text} 조금만 더 파이팅 하세요!`;
+      } else if (lowerInput.includes("안녕") || lowerInput.includes("반가워")) {
+        aiResponse = `안녕하세요! 오늘도 건강한 하루를 위해 저 Marlang이 돕겠습니다. 식단이나 운동에 대해 편하게 물어보세요.`;
+      } else {
+        aiResponse = `현재 ${analysis.remainingKcal}kcal(칼로리) 추가 섭취가 가능합니다. 더 구체적으로 식단 추천이나 운동 가이드에 대해 물어봐주시면 바로 분석해 드릴게요!`;
+      }
+
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiResponse }]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const quickSuggestions = ["저녁 메뉴 추천해줘 🥗", "내 인바디 상태 어때? 📈", "운동 루틴 조언해줘 🏋️‍♂️"];
+
+  return (
+    <div className="content-wrapper flex flex-col h-[calc(100vh-80px)] overflow-hidden animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="py-4 px-4 border-b border-white/10 flex items-center gap-3 bg-space-gray/90 backdrop-blur-md z-10 shrink-0 mt-2">
+        <div className="w-10 h-10 rounded-full bg-electric-blue flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.4)]">
+          <Bot size={20} className="text-black" />
+        </div>
+        <div>
+          <h2 className="text-sm font-black text-white italic tracking-tighter">Marlang AI</h2>
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <p className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase">Online & Ready</p>
           </div>
-          <div className="flex-1">
-            <div className="text-base font-bold text-white">Profile Identity</div>
-            <div className="text-xs text-dim">{profile.name} · {profile.height}cm · {profile.weight}kg</div>
-          </div>
-          <ChevronRight className="text-dim" size={18} />
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden mb-10">
-        {[
-          { icon: <Heart size={20} />, label: 'HealthKit Sync', sub: 'Biometric link established' },
-          { icon: <Settings size={20} />, label: 'Preference', sub: 'Interface & Notifications' }
-        ].map((item, i) => (
-          <div key={i} className={`flex items-center gap-4 p-5 ${i === 0 ? 'border-b border-white/5' : ''}`}>
-            <div className="text-white opacity-60">{item.icon}</div>
-            <div className="flex-1">
-              <div className="text-sm font-bold text-white">{item.label}</div>
-              <div className="text-[11px] text-dim font-medium">{item.sub}</div>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-4 shrink min-h-0 no-scrollbar relative">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] p-4 text-[13px] leading-relaxed relative ${msg.sender === 'user'
+              ? 'bg-electric-blue text-black font-bold rounded-2xl rounded-tr-sm shadow-[0_5px_15px_rgba(0,229,255,0.2)]'
+              : 'glass text-white font-medium border border-white/5 rounded-2xl rounded-tl-sm'
+              }`}>
+              {msg.text.split('\n').map((line, i) => <React.Fragment key={i}>{line}<br /></React.Fragment>)}
             </div>
-            <ChevronRight className="text-dim/50" size={18} />
           </div>
         ))}
-      </div>
-
-      {isEditing && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[2000] flex flex-col justify-end">
-          <div className="bg-[#1E1E1E] rounded-t-[40px] p-8 pb-12 animate-in slide-in-from-bottom duration-500">
-            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-8" />
-            <h3 className="text-xl font-black mb-8">EDIT IDENTITY</h3>
-            <div className="space-y-6 mb-10">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-dim tracking-widest uppercase pl-1">Identity Name</label>
-                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-electric-blue outline-none transition-all" value={tempProfile.name} onChange={e => setTempProfile({ ...tempProfile, name: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-dim tracking-widest uppercase pl-1">Height (cm)</label>
-                  <input type="number" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-electric-blue outline-none transition-all" value={tempProfile.height} onChange={e => setTempProfile({ ...tempProfile, height: parseFloat(e.target.value) })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-dim tracking-widest uppercase pl-1">Weight (kg)</label>
-                  <input type="number" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-electric-blue outline-none transition-all" value={tempProfile.weight} onChange={e => setTempProfile({ ...tempProfile, weight: parseFloat(e.target.value) })} />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <button className="flex-1 py-4 text-dim font-bold" onClick={() => setIsEditing(false)}>CANCEL</button>
-              <button className="flex-[2] btn-primary" onClick={handleSave}>SAVE PROTOCOL</button>
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="glass p-4 rounded-2xl rounded-tl-sm flex gap-1.5 items-center justify-center border border-white/5">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/50 animate-bounce"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+        <div ref={messagesEndRef} className="h-1" />
+      </div>
 
-      <p className="text-center text-[10px] font-black text-dim tracking-[0.4em] uppercase opacity-40">Anti-Gravity // V4.5.0</p>
+      {/* Input Area */}
+      <div className="shrink-0 p-4 bg-space-gray border-t border-white/5">
+        <div className="flex gap-2 overflow-x-auto mb-3 no-scrollbar pb-1">
+          {quickSuggestions.map((text, i) => (
+            <button key={i} onClick={() => handleSend(text)} className="whitespace-nowrap px-4 py-2 rounded-full glass border border-white/10 text-[10px] text-dim font-bold hover:text-electric-blue hover:border-electric-blue/50 transition-colors">
+              {text}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="마를랑 코치에게 물어보세요..."
+            className="flex-1 glass border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:border-electric-blue/50 focus:bg-white/5 outline-none transition-all placeholder:text-dim/50"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim()}
+            className="w-12 h-12 rounded-2xl bg-electric-blue flex items-center justify-center text-black active:scale-95 transition-all disabled:opacity-30 disabled:bg-white/10 disabled:text-white/30"
+          >
+            <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -648,7 +950,7 @@ const App = () => {
       {activeTab === 'home' && <HomeView />}
       {activeTab === 'record' && <RecordView />}
       {activeTab === 'report' && <ReportView />}
-      {activeTab === 'settings' && <SettingsView />}
+      {activeTab === 'chat' && <ChatView />}
 
       {showCondition && <ConditionModal onSave={(data) => { updateCondition(data); setShowCondition(false); }} />}
 
@@ -657,7 +959,7 @@ const App = () => {
           { id: 'home', icon: <Compass size={28} />, label: 'ORBIT' },
           { id: 'record', icon: <Zap size={28} />, label: 'LOG' },
           { id: 'report', icon: <BarChart3 size={28} />, label: 'DATA' },
-          { id: 'settings', icon: <Terminal size={28} />, label: 'CMD' }
+          { id: 'chat', icon: <MessageSquare size={28} />, label: 'AI' }
         ].map(tab => (
           <button
             key={tab.id}

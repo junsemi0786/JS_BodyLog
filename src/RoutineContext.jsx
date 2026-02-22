@@ -55,9 +55,12 @@ export const RoutineProvider = ({ children }) => {
         const saved = localStorage.getItem('ag_body');
         if (saved) return JSON.parse(saved);
         return {
-            weightHistory: [{ date: '2025-11-20', value: 77.3 }],
             inbodyHistory: [
-                { date: '2025-11-29', weight: 77.3, fat: 25.3, muscleMass: 35.5, skeletalMuscle: 30.1, visceralFat: 14 }
+                { date: '2023-11-01', weight: 70.8, muscleMass: 32.5, fat: 12.8, visceralFat: 6 },
+                { date: '2023-10-15', weight: 71.5, muscleMass: 32.2, fat: 13.5, visceralFat: 7 },
+                { date: '2023-10-01', weight: 72.1, muscleMass: 31.8, fat: 14.1, visceralFat: 7 },
+                { date: '2023-09-15', weight: 72.8, muscleMass: 31.5, fat: 14.9, visceralFat: 8 },
+                { date: '2023-09-01', weight: 73.5, muscleMass: 31.0, fat: 15.8, visceralFat: 8 }
             ],
             bodyPhotos: []
         };
@@ -100,9 +103,9 @@ export const RoutineProvider = ({ children }) => {
                 week: 1,
                 currentMode: 'Overload', // Default mode for PT Plan
                 recommendations: [
-                    { id: 1, name: '체스트 프레스', weight: 30, reps: 12, sets: 3, area: 'Chest', intensity: 7 },
-                    { id: 2, name: '레그 프레스', weight: 60, reps: 15, sets: 3, area: 'Legs', intensity: 8 },
-                    { id: 3, name: '랫 풀 다운', weight: 25, reps: 12, sets: 3, area: 'Back', intensity: 7 }
+                    { id: 1, name: '체스트 프레스', weight: 30, reps: 12, sets: 3, area: 'Chest', intensity: 7, completedSets: [] },
+                    { id: 2, name: '레그 프레스', weight: 60, reps: 15, sets: 3, area: 'Legs', intensity: 8, completedSets: [] },
+                    { id: 3, name: '랫 풀 다운', weight: 25, reps: 12, sets: 3, area: 'Back', intensity: 7, completedSets: [] }
                 ]
             }
         };
@@ -136,11 +139,35 @@ export const RoutineProvider = ({ children }) => {
         let newMode = user.aiCoaching.currentMode;
         let reason = user.aiCoaching.reason;
         let status = 'normal';
+        let bodyInsightTitle = '안정적인 체성분 유지 중';
+        let bodyInsightText = '현재 골격근량과 체지방량이 균형을 이루고 있습니다. 지금의 루틴을 유지하세요.';
+
+        // BMI Calculation
+        const heightM = user.profile.height / 100;
+        const bmi = parseFloat((latest.weight / (heightM * heightM)).toFixed(1));
+
+        let bmiStatus = 'Normal';
+        if (bmi < 18.5) bmiStatus = 'Underweight';
+        else if (bmi >= 23 && bmi < 25) bmiStatus = 'Overweight';
+        else if (bmi >= 25 && bmi < 30) bmiStatus = 'Obese I';
+        else if (bmi >= 30) bmiStatus = 'Obese II';
 
         if (prev) {
             const muscleDiff = latest.muscleMass - prev.muscleMass;
             const weightDiff = latest.weight - prev.weight;
             const fatDiff = latest.fat - prev.fat;
+
+            // Insight logic based on changes
+            if (fatDiff > 0.5 && muscleDiff <= 0) {
+                bodyInsightTitle = '체지방 주의 요망';
+                bodyInsightText = `골격근량 변화 없이 체지방이 ${fatDiff.toFixed(1)}kg 증가했습니다. 유산소 비율을 높이세요.`;
+            } else if (muscleDiff > 0.3 && fatDiff < 0) {
+                bodyInsightTitle = '이상적인 근성장';
+                bodyInsightText = `근육량이 ${muscleDiff.toFixed(1)}kg 증가하고 체지방이 감소했습니다. 완벽한 린매스업 상태입니다!`;
+            } else if (weightDiff < -1.5 && muscleDiff < -0.5) {
+                bodyInsightTitle = '경고: 근손실 발생';
+                bodyInsightText = `체중 감량 속도가 너무 빠릅니다. 근육이 ${Math.abs(muscleDiff).toFixed(1)}kg 감소했으니 단백질 섭취를 20% 늘려주세요.`;
+            }
 
             // 1. MuscleGuard (근손실 방지)
             if (weightDiff < -0.5 && muscleDiff < -0.2) {
@@ -168,16 +195,38 @@ export const RoutineProvider = ({ children }) => {
             }
         }
 
-        const bmr = Math.round(10 * latest.weight + 6.25 * user.profile.height - 5 * user.profile.age + (user.profile.gender === 'M' ? 5 : -161));
+        // Calorie & Macro Status
+        const bmr = latest.weight * 24; // Simplified BMR
         const tdee = Math.round(bmr * user.profile.activityLevel);
+        const intake = diet.stats.todayTotalKcal;
+        const remainingKcal = Math.max(0, tdee - intake);
+
+        const targetMacros = {
+            carb: Math.round((tdee * user.goals.macrosRatio.carb) / 100 / 4),
+            protein: Math.round((tdee * user.goals.macrosRatio.protein) / 100 / 4),
+            fat: Math.round((tdee * user.goals.macrosRatio.fat) / 100 / 9)
+        };
+
+        const currentMacros = {
+            carb: diet.stats.todayCarb,
+            protein: diet.stats.todayProtein,
+            fat: diet.stats.todayFat
+        };
 
         return {
             currentMode: newMode,
             reason,
             bmr,
             tdee,
+            intake,
+            remainingKcal,
+            targetMacros,
+            currentMacros,
+            bmi,
+            bmiStatus,
+            bodyInsight: { title: bodyInsightTitle, text: bodyInsightText },
             agScore: calculateAGScore(),
-            targetProtein: Math.round(latest.weight * (newMode === 'MuscleGuard' ? 2.0 : 1.6)),
+            targetProtein: targetMacros.protein,
             xpProgress: (user.profile.xp / user.profile.nextLevelXp) * 100,
             interpretation: reason,
             status,
@@ -186,9 +235,16 @@ export const RoutineProvider = ({ children }) => {
                 pre: newMode === 'OverloadProgress' ? "부스터" : "L-카르니틴",
                 intra: "BCAA",
                 post: "유청 단백질"
+            },
+            fasting: {
+                protocol: "16:8",
+                hoursPassed: 14,
+                totalHours: 16,
+                state: "Fat Burning",
+                timer: "02:14:35"
             }
         };
-    }, [body.inbodyHistory, user.aiCoaching.currentMode, user.profile]);
+    }, [body.inbodyHistory, user.aiCoaching.currentMode, user.profile, diet.stats, coaching.ptPlan, lifestyle.habits]);
 
     // --- 4. ACTION DISPATCHERS ---
     const addDietEntry = (meal) => {
@@ -209,10 +265,12 @@ export const RoutineProvider = ({ children }) => {
             const newLogs = [newEntry, ...prev.logs];
             const stats = newLogs.reduce((acc, log) => {
                 log.items.forEach(item => {
-                    acc.todayTotalKcal += item.kcal || 0;
-                    acc.todayCarb += item.carb || 0;
-                    acc.todayProtein += item.protein || 0;
-                    acc.todayFat += item.fat || 0;
+                    // Fallback to average macro distribution if not fully specified
+                    const kcal = item.kcal || item.protein * 4 + item.carb * 4 + item.fat * 9 || 0;
+                    acc.todayTotalKcal += kcal;
+                    acc.todayCarb += item.carb || Math.round((kcal * 0.4) / 4);
+                    acc.todayProtein += item.protein || Math.round((kcal * 0.3) / 4);
+                    acc.todayFat += item.fat || Math.round((kcal * 0.3) / 9);
                 });
                 return acc;
             }, { todayTotalKcal: 0, todayCarb: 0, todayProtein: 0, todayFat: 0 });
@@ -269,12 +327,58 @@ export const RoutineProvider = ({ children }) => {
         });
     };
 
+    const toggleSet = (exerciseId, setIndex) => {
+        setCoaching(prev => {
+            const newRecommendations = prev.ptPlan.recommendations.map(ex => {
+                if (ex.id === exerciseId) {
+                    const completed = [...(ex.completedSets || [])];
+                    if (completed.includes(setIndex)) {
+                        completed.splice(completed.indexOf(setIndex), 1);
+                    } else {
+                        completed.push(setIndex);
+                        gainXp(5); // Small reward per set
+                    }
+                    return { ...ex, completedSets: completed };
+                }
+                return ex;
+            });
+            return { ...prev, ptPlan: { ...prev.ptPlan, recommendations: newRecommendations } };
+        });
+    };
+
     const completeWorkout = () => {
-        gainXp(50);
-        setCoaching(prev => ({
-            ...prev,
-            ptPlan: { ...prev.ptPlan, lastWorkoutDate: new Date().toISOString(), streak: (prev.ptPlan.streak || 0) + 1 }
-        }));
+        const totalCompletedSets = coaching.ptPlan.recommendations.reduce((acc, ex) => acc + (ex.completedSets?.length || 0), 0);
+
+        if (totalCompletedSets > 0) {
+            const totalVolume = coaching.ptPlan.recommendations.reduce((acc, ex) => acc + ((ex.completedSets?.length || 0) * ex.weight * ex.reps), 0);
+            const durationMin = totalCompletedSets * 3; // roughly 3 mins per set incl. rest
+            const burntKcal = durationMin * 6; // roughly 6 kcal/min for weight training
+
+            addExerciseEntry({
+                category: "Weight Training",
+                duration: durationMin,
+                burntKcal: burntKcal,
+                exercises: coaching.ptPlan.recommendations.filter(ex => ex.completedSets?.length > 0).map(ex => ({
+                    name: ex.name,
+                    setsCompleted: ex.completedSets.length,
+                    volume: ex.completedSets.length * ex.weight * ex.reps
+                }))
+            });
+            gainXp(50);
+
+            // Reset sets for next session
+            setCoaching(prev => ({
+                ...prev,
+                ptPlan: {
+                    ...prev.ptPlan,
+                    lastWorkoutDate: new Date().toISOString(),
+                    streak: (prev.ptPlan.streak || 0) + 1,
+                    recommendations: prev.ptPlan.recommendations.map(ex => ({ ...ex, completedSets: [] }))
+                }
+            }));
+
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#00E5FF', '#FFFFFF'] });
+        }
     };
 
     const updateCondition = (data) => {
@@ -288,6 +392,33 @@ export const RoutineProvider = ({ children }) => {
         setUser(prev => ({ ...prev, profile: { ...prev.profile, ...newProfile } }));
     };
 
+    const trackWater = () => {
+        setLifestyle(prev => {
+            if (prev.water.intake >= prev.water.target) return prev;
+            gainXp(10);
+            return {
+                ...prev,
+                water: { ...prev.water, intake: prev.water.intake + 1 }
+            };
+        });
+    };
+
+    const toggleSupplement = (id) => {
+        setLifestyle(prev => {
+            const today = new Date().toDateString();
+            const newSupplements = prev.supplements.map(sup => {
+                if (sup.id === id) {
+                    const isCompleted = sup.lastCompleted === today;
+                    if (!isCompleted) gainXp(15);
+                    return { ...sup, lastCompleted: isCompleted ? null : today };
+                }
+                return sup;
+            });
+            return { ...prev, supplements: newSupplements };
+        });
+    };
+
+
     return (
         <RoutineContext.Provider value={{
             user, diet, activity, body, lifestyle, coaching,
@@ -300,7 +431,7 @@ export const RoutineProvider = ({ children }) => {
             analysis,
             condition: lifestyle.condition,
             carryover: [],
-            addDietEntry, addExerciseEntry, toggleHabit, completeWorkout, updateCondition, updateProfile
+            addDietEntry, addExerciseEntry, toggleHabit, completeWorkout, updateCondition, updateProfile, toggleSet, trackWater, toggleSupplement
         }}>
             {children}
         </RoutineContext.Provider>
