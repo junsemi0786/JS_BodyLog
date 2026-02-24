@@ -9,10 +9,7 @@ export const RoutineProvider = ({ children }) => {
 
     // [User & Goals]
     const [user, setUser] = useState(() => {
-        const saved = localStorage.getItem('ag_user');
-        if (saved) return JSON.parse(saved);
-
-        return {
+        const defaultUser = {
             profile: { id: 'user_1', name: 'Junsemi', age: 29, height: 178, gender: 'M', activityLevel: 1.55, level: 1, xp: 0, nextLevelXp: 100 },
             metrics: { bmr: 1750, tdee: 2400 },
             goals: {
@@ -25,6 +22,19 @@ export const RoutineProvider = ({ children }) => {
                 lastUpdated: new Date().toISOString(),
                 reason: "초기 설정: 근력 향상 및 체력 증진 모드로 시작합니다."
             }
+        };
+
+        const saved = localStorage.getItem('ag_user');
+        if (!saved) return defaultUser;
+
+        const parsed = JSON.parse(saved);
+        // Simple merge
+        return {
+            ...defaultUser,
+            ...parsed,
+            profile: { ...defaultUser.profile, ...parsed.profile },
+            goals: { ...defaultUser.goals, ...parsed.goals },
+            aiCoaching: { ...defaultUser.aiCoaching, ...parsed.aiCoaching }
         };
     });
 
@@ -77,25 +87,37 @@ export const RoutineProvider = ({ children }) => {
 
     // [Lifestyle & Habits]
     const [lifestyle, setLifestyle] = useState(() => {
-        const saved = localStorage.getItem('ag_lifestyle');
-        if (saved) return JSON.parse(saved);
-
-        // Migration from legacy 'pfp_habits' & 'pfp_condition'
         const legacyHabits = localStorage.getItem('pfp_habits');
-        const habits = legacyHabits ? JSON.parse(legacyHabits) : [
+        const defaultHabits = legacyHabits ? JSON.parse(legacyHabits) : [
             { id: 1, name: '아침 공복 물 한 잔', streak: 0, trigger: '기상하자마자' },
             { id: 2, name: '심근력 머신 운동', streak: 0, trigger: '퇴근 후 바로' },
             { id: 3, name: '단백질 위주 식사', streak: 0, trigger: '점심/저녁 식사 시' }
         ];
-        const legacyCond = localStorage.getItem('pfp_condition');
-        const cond = legacyCond ? JSON.parse(legacyCond) : { lastRecorded: null };
 
-        return {
+        const defaultLifestyle = {
             fasting: { protocol: '16:8', startTime: '20:00', isActive: true },
             waterRecords: [],
+            water: { intake: 4, target: 8 },
+            supplements: [
+                { id: 1, name: '멀티 비타민', amount: '1 Tablet', lastCompleted: null },
+                { id: 2, name: '오메가3', amount: '2 Capsules', lastCompleted: null },
+                { id: 3, name: '유산균', amount: '1 Sachet', lastCompleted: null }
+            ],
             sleep: { duration: 6.5, quality: 'Good' },
-            habits,
-            condition: cond // Carry over condition for the daily sync modal
+            habits: defaultHabits,
+            condition: { lastRecorded: null }
+        };
+
+        const saved = localStorage.getItem('ag_lifestyle');
+        if (!saved) return defaultLifestyle;
+
+        const parsed = JSON.parse(saved);
+        return {
+            ...defaultLifestyle,
+            ...parsed,
+            water: parsed.water || defaultLifestyle.water,
+            supplements: parsed.supplements || defaultLifestyle.supplements,
+            fasting: { ...defaultLifestyle.fasting, ...parsed.fasting }
         };
     });
 
@@ -271,18 +293,21 @@ export const RoutineProvider = ({ children }) => {
         };
 
         setDiet(prev => {
+            const today = new Date().toDateString();
             const newLogs = [newEntry, ...prev.logs];
-            const stats = newLogs.reduce((acc, log) => {
-                log.items.forEach(item => {
-                    // Fallback to average macro distribution if not fully specified
-                    const kcal = item.kcal || item.protein * 4 + item.carb * 4 + item.fat * 9 || 0;
-                    acc.todayTotalKcal += kcal;
-                    acc.todayCarb += item.carb || Math.round((kcal * 0.4) / 4);
-                    acc.todayProtein += item.protein || Math.round((kcal * 0.3) / 4);
-                    acc.todayFat += item.fat || Math.round((kcal * 0.3) / 9);
-                });
-                return acc;
-            }, { todayTotalKcal: 0, todayCarb: 0, todayProtein: 0, todayFat: 0 });
+
+            // Only count logs from today for current status
+            const stats = newLogs.filter(log => new Date(log.timestamp).toDateString() === today)
+                .reduce((acc, log) => {
+                    log.items.forEach(item => {
+                        const kcal = item.kcal || (item.protein * 4 + item.carb * 4 + item.fat * 9) || 0;
+                        acc.todayTotalKcal += kcal;
+                        acc.todayCarb += item.carb || Math.round((kcal * 0.4) / 4);
+                        acc.todayProtein += item.protein || Math.round((kcal * 0.3) / 4);
+                        acc.todayFat += item.fat || Math.round((kcal * 0.3) / 9);
+                    });
+                    return acc;
+                }, { todayTotalKcal: 0, todayCarb: 0, todayProtein: 0, todayFat: 0 });
 
             return { logs: newLogs, stats };
         });
@@ -300,11 +325,21 @@ export const RoutineProvider = ({ children }) => {
             totalBurntKcal: workout.burntKcal || 200
         };
 
-        setActivity(prev => ({
-            ...prev,
-            workouts: [newEntry, ...prev.workouts],
-            activeEnergy: prev.activeEnergy + newEntry.totalBurntKcal
-        }));
+        setActivity(prev => {
+            const today = new Date().toDateString();
+            const newWorkouts = [newEntry, ...prev.workouts];
+
+            // Re-calculate activeEnergy based on today's workouts only
+            const todayEnergy = newWorkouts
+                .filter(w => new Date(w.timestamp).toDateString() === today)
+                .reduce((acc, w) => acc + (w.totalBurntKcal || 0), 0);
+
+            return {
+                ...prev,
+                workouts: newWorkouts,
+                activeEnergy: todayEnergy
+            };
+        });
         gainXp(50);
     };
 
@@ -427,6 +462,38 @@ export const RoutineProvider = ({ children }) => {
         });
     };
 
+    const removeDietEntry = (id) => {
+        setDiet(prev => {
+            const today = new Date().toDateString();
+            const newLogs = prev.logs.filter(log => log.id !== id);
+
+            const stats = newLogs.filter(log => new Date(log.timestamp).toDateString() === today)
+                .reduce((acc, log) => {
+                    log.items.forEach(item => {
+                        const kcal = item.kcal || (item.protein * 4 + item.carb * 4 + item.fat * 9) || 0;
+                        acc.todayTotalKcal += kcal;
+                        acc.todayCarb += item.carb || Math.round((kcal * 0.4) / 4);
+                        acc.todayProtein += item.protein || Math.round((kcal * 0.3) / 4);
+                        acc.todayFat += item.fat || Math.round((kcal * 0.3) / 9);
+                    });
+                    return acc;
+                }, { todayTotalKcal: 0, todayCarb: 0, todayProtein: 0, todayFat: 0 });
+
+            return { logs: newLogs, stats };
+        });
+    };
+
+    const removeExerciseEntry = (id) => {
+        setActivity(prev => {
+            const today = new Date().toDateString();
+            const newWorkouts = prev.workouts.filter(w => w.id !== id);
+            const todayEnergy = newWorkouts
+                .filter(w => new Date(w.timestamp).toDateString() === today)
+                .reduce((acc, w) => acc + (w.totalBurntKcal || 0), 0);
+
+            return { ...prev, workouts: newWorkouts, activeEnergy: todayEnergy };
+        });
+    };
 
     return (
         <RoutineContext.Provider value={{
@@ -440,7 +507,7 @@ export const RoutineProvider = ({ children }) => {
             analysis,
             condition: lifestyle.condition,
             carryover: [],
-            addDietEntry, addExerciseEntry, toggleHabit, completeWorkout, updateCondition, updateProfile, toggleSet, trackWater, toggleSupplement
+            addDietEntry, removeDietEntry, addExerciseEntry, removeExerciseEntry, toggleHabit, completeWorkout, updateCondition, updateProfile, toggleSet, trackWater, toggleSupplement
         }}>
             {children}
         </RoutineContext.Provider>

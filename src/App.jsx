@@ -3,7 +3,7 @@ import { useRoutine } from './RoutineContext';
 import {
   Flame, Clock, CheckCircle2, Activity, Briefcase, Home, Info,
   User, ClipboardList, TrendingUp, Settings, ChevronRight, AlertCircle,
-  Camera, Award, Mic, Heart, Moon, Footprints, ArrowUpRight, Compass, Zap, BarChart3, MessageSquare, Send, Bot
+  Camera, Award, Mic, Heart, Moon, Footprints, ArrowUpRight, Compass, Zap, BarChart3, MessageSquare, Send, Bot, X, Plus, Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -270,7 +270,7 @@ const HomeView = ({ onNavigate }) => {
       </section>
 
       {/* 5. Active Protocol Routine */}
-      < section className="mb-20 px-2" >
+      <section className="mb-20 px-2" >
         <h3 className="text-[10px] font-black text-dim tracking-[0.3em] mb-6 uppercase pl-2 flex justify-between items-center">
           Next Mission Protocol
           <span className="px-3 py-1 bg-electric-blue/10 text-electric-blue rounded-full text-[8px] font-black tracking-widest border border-electric-blue/20">
@@ -343,7 +343,7 @@ const HomeView = ({ onNavigate }) => {
 // --- [RecordView] Intelligent Diet Logging & Habits ---
 const RecordView = () => {
   const {
-    diet, activity, habits, lifestyle, addDietEntry, carryover, trackWater, toggleSupplement
+    diet, activity, habits, lifestyle, addDietEntry, removeDietEntry, carryover, trackWater, toggleSupplement
   } = useRoutine();
 
   const [mealType, setMealType] = useState('Breakfast');
@@ -513,12 +513,20 @@ const RecordView = () => {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleQuickAdd(log)}
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-dim bg-white/5 hover:bg-electric-blue hover:text-black hover:border-electric-blue transition-all"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleQuickAdd(log)}
+                      className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-dim bg-white/5 hover:bg-emerald-500 hover:text-black hover:border-emerald-500 transition-all"
+                    >
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      onClick={() => removeDietEntry(log.id)}
+                      className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-dim bg-white/5 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -626,9 +634,11 @@ const ReportView = () => {
   const width = 300;
   const height = 120;
 
+  const safeRange = range === 0 ? 1 : range;
+
   const points = history.map((d, i) => {
-    const x = (i / (history.length - 1)) * width;
-    const y = height - ((d.weight - minWeight) / range) * height;
+    const x = (i / (history.length - 1 || 1)) * width;
+    const y = height - ((d.weight - minWeight) / safeRange) * height;
     return `${x},${y}`;
   }).join(' ');
 
@@ -679,18 +689,18 @@ const ReportView = () => {
                   {/* Target Marker */}
                   <div
                     className="absolute top-0 bottom-0 w-1 bg-white/30 z-10"
-                    style={{ left: `${Math.min(100, (item.target / (item.target * 1.5)) * 100)}%` }}
+                    style={{ left: `${item.target > 0 ? Math.min(100, (item.target / (item.target * 1.5)) * 100) : 0}%` }}
                   />
                   {/* Fill Bar */}
                   <div
                     className={`h-full ${item.color} ${item.glow} transition-all duration-1000 ease-out`}
-                    style={{ width: `${Math.min(100, (item.val / (item.target * 1.5)) * 100)}%` }}
+                    style={{ width: `${item.target > 0 ? Math.min(100, (item.val / (item.target * 1.5)) * 100) : 0}%` }}
                   />
                 </div>
                 {/* Target Label */}
                 <div className="flex justify-between mt-1 px-1">
                   <span className="text-[8px] text-dim/50 uppercase font-bold tracking-widest">Target: {item.target}{item.unit}</span>
-                  <span className="text-[8px] text-white/50 uppercase font-bold tracking-widest">{((item.val / item.target) * 100).toFixed(0)}%</span>
+                  <span className="text-[8px] text-white/50 uppercase font-bold tracking-widest">{(item.target > 0 ? (item.val / item.target) * 100 : 0).toFixed(0)}%</span>
                 </div>
               </div>
             ))}
@@ -808,20 +818,24 @@ const ChatView = () => {
       let aiResponse = "";
       const lowerInput = userText.toLowerCase();
 
-      if (lowerInput.includes("저녁") || lowerInput.includes("메뉴") || lowerInput.includes("추천") || lowerInput.includes("밥")) {
+      if (lowerInput.includes("저녁") || lowerInput.includes("메뉴") || lowerInput.includes("추천") || lowerInput.includes("밥") || lowerInput.includes("점심")) {
         if (analysis.currentMacros.protein < analysis.targetMacros.protein * 0.8) {
-          aiResponse = `오늘 단백질이 목표치보다 ${analysis.targetMacros.protein - analysis.currentMacros.protein}g 더 필요하네요! 저녁 메뉴로는 단백질이 풍부한 닭가슴살 샐러드나 구운 연어, 가벼운 두부 요리를 추천합니다. (남은 여유 칼로리: ${analysis.remainingKcal}kcal)`;
+          aiResponse = `오늘 단백질이 목표치보다 약 ${Math.max(0, analysis.targetMacros.protein - analysis.currentMacros.protein)}g 더 필요하네요! 저녁 메뉴로는 단백질이 풍부한 닭가슴살 샐러드나 구운 연어, 가벼운 두부 요리를 추천합니다. (남은 여유 칼로리: ${analysis.remainingKcal}kcal)`;
+        } else if (analysis.intake > analysis.tdee * 0.9) {
+          aiResponse = `오늘 이미 많은 칼로리(${analysis.intake}kcal)를 섭취하셨습니다! 가벼운 채소 위주의 식단이나 단식 프로토콜을 유지하시는 걸 추천드려요.`;
         } else {
           aiResponse = `오늘 권장 단백질을 훌륭하게 채우셨군요! 남은 ${analysis.remainingKcal}kcal 내에서 신선한 야채가 듬뿍 들어간 포케나 가벼운 샌드위치는 어떨까요?`;
         }
-      } else if (lowerInput.includes("운동") || lowerInput.includes("루틴")) {
-        aiResponse = `현재 ${analysis.currentMode} 모드가 활성화되어 있습니다. ${analysis.reason} ORBIT 탭 하단의 미션 프로토콜을 수행해주세요!`;
-      } else if (lowerInput.includes("인바디") || lowerInput.includes("상태") || lowerInput.includes("몸")) {
-        aiResponse = `최근 데이터 분석 결과: ${analysis.bodyInsight.title} \n${analysis.bodyInsight.text} 조금만 더 파이팅 하세요!`;
-      } else if (lowerInput.includes("안녕") || lowerInput.includes("반가워")) {
-        aiResponse = `안녕하세요! 오늘도 건강한 하루를 위해 저 Marlang이 돕겠습니다. 식단이나 운동에 대해 편하게 물어보세요.`;
+      } else if (lowerInput.includes("운동") || lowerInput.includes("루틴") || lowerInput.includes("프로토콜")) {
+        aiResponse = `현재 ${analysis.currentMode} 모드가 활성화되어 있습니다. \n\n🤖 코치 브리핑: "${analysis.reason}" \n\nORBIT 탭 하단의 'Next Mission Protocol'을 확인하고 오늘 분량의 세트를 완수해보세요!`;
+      } else if (lowerInput.includes("인바디") || lowerInput.includes("상태") || lowerInput.includes("몸") || lowerInput.includes("체중")) {
+        aiResponse = `최근 데이터 분석 결과: ${analysis.bodyInsight.title} \n\n💡 ${analysis.bodyInsight.text} \n\nBMI 지수는 ${analysis.bmi}로 '${analysis.bmiStatus}' 상태입니다. 조금만 더 파이팅 하세요!`;
+      } else if (lowerInput.includes("안녕") || lowerInput.includes("반가워") || lowerInput.includes("누구")) {
+        aiResponse = `안녕하세요! 오늘도 건강한 하루를 위해 저 Marlang이 대기 중입니다. 저는 ${profile.name}님의 데이터를 실시간으로 읽고 있어요. 식단 추천이나 운동 가이드에 대해 물어봐주세요!`;
+      } else if (lowerInput.includes("점수") || lowerInput.includes("스코어") || lowerInput.includes("랭크")) {
+        aiResponse = `${profile.name}님의 현재 Anti-Gravity 스코어는 ${analysis.agScore}점입니다! 현재 레벨 ${profile.level}로 순항 중이시네요. 꾸준한 루틴 달성이 스코어 상승의 핵심입니다.`;
       } else {
-        aiResponse = `현재 ${analysis.remainingKcal}kcal(칼로리) 추가 섭취가 가능합니다. 더 구체적으로 식단 추천이나 운동 가이드에 대해 물어봐주시면 바로 분석해 드릴게요!`;
+        aiResponse = `현재 ${analysis.remainingKcal}kcal 정도 더 섭취하실 수 있는 여유가 있습니다. (오늘 ${analysis.intake}kcal 섭취) \n\n혹시 식단 기록이 누락되었거나 운동 루틴에 대해 궁금한 점이 있으신가요?`;
       }
 
       setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiResponse }]);
