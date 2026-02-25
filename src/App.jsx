@@ -637,24 +637,39 @@ const ReportView = () => {
   const { healthData, analysis, profile, addInbodyEntry } = useRoutine();
   const [isScanning, setIsScanning] = useState(false);
   const [scanDone, setScanDone] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const handleInbodyScan = () => {
+  const handleInbodyScanClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     setIsScanning(true);
     setScanDone(false);
+
+    // Simulate OCR process taking 2 seconds
     setTimeout(() => {
-      // Simulate new InBody data
       const currentWeight = healthData.inbodyHistory[0]?.weight || 77;
-      const variation = (Math.random() - 0.5) * 0.4; // ±0.2kg variation
+      const variation = (Math.random() - 0.5) * 0.4;
       addInbodyEntry({
         weight: parseFloat((currentWeight + variation).toFixed(1)),
-        muscleMass: parseFloat((healthData.inbodyHistory[0]?.muscleMass || 34 + (Math.random() - 0.5) * 0.2).toFixed(1)),
-        fat: parseFloat((healthData.inbodyHistory[0]?.fat || 14 + (Math.random() - 0.5) * 0.2).toFixed(1)),
+        muscleMass: parseFloat(((healthData.inbodyHistory[0]?.muscleMass || 34) + (Math.random() - 0.5) * 0.2).toFixed(1)),
+        fat: parseFloat(((healthData.inbodyHistory[0]?.fat || 14) + (Math.random() - 0.5) * 0.2).toFixed(1)),
         bmi: parseFloat((analysis.bmi || 24.4).toFixed(1)),
       });
       setIsScanning(false);
       setScanDone(true);
+
+      // Reset input to effectively "discard" the photo
+      e.target.value = null;
+
       setTimeout(() => setScanDone(false), 3000);
-    }, 1800);
+    }, 2000);
   };
 
   // Calculate points for the Weight Trend chart
@@ -698,17 +713,24 @@ const ReportView = () => {
         <div className="card glass p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
           <div className="flex justify-between items-end mb-8">
             <h4 className="text-sm font-black text-white uppercase tracking-tighter">InBody Composition</h4>
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
             <button
-              onClick={handleInbodyScan}
+              onClick={handleInbodyScanClick}
               disabled={isScanning}
               className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all active:scale-95 ${scanDone
-                  ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/30'
-                  : isScanning
-                    ? 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 animate-pulse'
-                    : 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 hover:bg-electric-blue/20'
+                ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/30'
+                : isScanning
+                  ? 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 animate-pulse'
+                  : 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 hover:bg-electric-blue/20'
                 }`}
             >
-              {scanDone ? <><Check size={10} /> Synced</> : isScanning ? '⟳ Scanning...' : <><Camera size={10} /> Scan InBody</>}
+              {scanDone ? <><Check size={10} /> Photo Discarded</> : isScanning ? '⟳ Analyzing Image...' : <><Camera size={10} /> Upload InBody Photo</>}
             </button>
           </div>
 

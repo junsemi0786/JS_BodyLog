@@ -27,21 +27,28 @@ export const RoutineProvider = ({ children }) => {
         const saved = localStorage.getItem('ag_user');
         if (!saved) return defaultUser;
 
-        const parsed = JSON.parse(saved);
-        // Simple merge
-        return {
-            ...defaultUser,
-            ...parsed,
-            profile: { ...defaultUser.profile, ...parsed.profile },
-            goals: { ...defaultUser.goals, ...parsed.goals },
-            aiCoaching: { ...defaultUser.aiCoaching, ...parsed.aiCoaching }
-        };
+        try {
+            const parsed = JSON.parse(saved);
+            return {
+                ...defaultUser,
+                ...parsed,
+                profile: { ...defaultUser.profile, ...(parsed.profile || {}) },
+                goals: { ...defaultUser.goals, ...(parsed.goals || {}) },
+                aiCoaching: { ...defaultUser.aiCoaching, ...(parsed.aiCoaching || {}) }
+            };
+        } catch (e) {
+            console.error("Failed to parse ag_user from localStorage", e);
+            return defaultUser;
+        }
     });
 
     // [Diet & Nutrition]
     const [diet, setDiet] = useState(() => {
         const saved = localStorage.getItem('ag_diet');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try { return JSON.parse(saved); }
+            catch (e) { console.error("Parse error ag_diet", e); }
+        }
 
         // Dummy Data explicitly injected to prevent NaN and show UI functionality (User request)
         return {
@@ -61,7 +68,10 @@ export const RoutineProvider = ({ children }) => {
     // [Activity & Workouts]
     const [activity, setActivity] = useState(() => {
         const saved = localStorage.getItem('ag_activity');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try { return JSON.parse(saved); }
+            catch (e) { console.error("Parse error ag_activity", e); }
+        }
         return {
             workouts: [],
             steps: 8400,
@@ -72,7 +82,10 @@ export const RoutineProvider = ({ children }) => {
     // [Body Metrics]
     const [body, setBody] = useState(() => {
         const saved = localStorage.getItem('ag_body');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try { return JSON.parse(saved); }
+            catch (e) { console.error("Parse error ag_body", e); }
+        }
         return {
             inbodyHistory: [
                 { date: '2023-11-01', weight: 70.8, muscleMass: 32.5, fat: 12.8, visceralFat: 6 },
@@ -111,20 +124,28 @@ export const RoutineProvider = ({ children }) => {
         const saved = localStorage.getItem('ag_lifestyle');
         if (!saved) return defaultLifestyle;
 
-        const parsed = JSON.parse(saved);
-        return {
-            ...defaultLifestyle,
-            ...parsed,
-            water: parsed.water || defaultLifestyle.water,
-            supplements: parsed.supplements || defaultLifestyle.supplements,
-            fasting: { ...defaultLifestyle.fasting, ...parsed.fasting }
-        };
+        try {
+            const parsed = JSON.parse(saved);
+            return {
+                ...defaultLifestyle,
+                ...parsed,
+                water: parsed.water || defaultLifestyle.water,
+                supplements: parsed.supplements || defaultLifestyle.supplements,
+                fasting: { ...defaultLifestyle.fasting, ...(parsed.fasting || {}) }
+            };
+        } catch (e) {
+            console.error("Failed to parse ag_lifestyle", e);
+            return defaultLifestyle;
+        }
     });
 
     // [Coaching & Analysis]
     const [coaching, setCoaching] = useState(() => {
         const saved = localStorage.getItem('ag_coaching');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try { return JSON.parse(saved); }
+            catch (e) { console.error("Parse error ag_coaching", e); }
+        }
         return {
             aiSchedule: {
                 weekStarting: new Date().toISOString(),
@@ -358,36 +379,44 @@ export const RoutineProvider = ({ children }) => {
     };
 
     const toggleHabit = (id) => {
-        setLifestyle(prev => {
-            const today = new Date().toDateString();
-            const newHabits = prev.habits.map(h => {
-                if (h.id === id && h.lastCompleted !== today) {
-                    gainXp(20);
-                    return { ...h, streak: (h.streak || 0) + 1, lastCompleted: today };
-                }
-                return h;
-            });
-            return { ...prev, habits: newHabits };
-        });
+        const today = new Date().toDateString();
+        const habit = lifestyle.habits.find(h => h.id === id);
+        if (habit && habit.lastCompleted !== today) {
+            gainXp(20);
+            setLifestyle(prev => ({
+                ...prev,
+                habits: prev.habits.map(h => h.id === id ? { ...h, streak: (h.streak || 0) + 1, lastCompleted: today } : h)
+            }));
+        }
     };
 
     const toggleSet = (exerciseId, setIndex) => {
-        setCoaching(prev => {
-            const newRecommendations = prev.ptPlan.recommendations.map(ex => {
-                if (ex.id === exerciseId) {
-                    const completed = [...(ex.completedSets || [])];
-                    if (completed.includes(setIndex)) {
-                        completed.splice(completed.indexOf(setIndex), 1);
-                    } else {
-                        completed.push(setIndex);
-                        gainXp(5); // Small reward per set
-                    }
-                    return { ...ex, completedSets: completed };
+        const exItem = coaching.ptPlan.recommendations.find(ex => ex.id === exerciseId);
+        if (exItem) {
+            const completed = [...(exItem.completedSets || [])];
+            const isCompleted = completed.includes(setIndex);
+
+            if (!isCompleted) gainXp(5);
+
+            setCoaching(prev => ({
+                ...prev,
+                ptPlan: {
+                    ...prev.ptPlan,
+                    recommendations: prev.ptPlan.recommendations.map(ex => {
+                        if (ex.id === exerciseId) {
+                            const newCompleted = [...(ex.completedSets || [])];
+                            if (newCompleted.includes(setIndex)) {
+                                newCompleted.splice(newCompleted.indexOf(setIndex), 1);
+                            } else {
+                                newCompleted.push(setIndex);
+                            }
+                            return { ...ex, completedSets: newCompleted };
+                        }
+                        return ex;
+                    })
                 }
-                return ex;
-            });
-            return { ...prev, ptPlan: { ...prev.ptPlan, recommendations: newRecommendations } };
-        });
+            }));
+        }
     };
 
     const completeWorkout = () => {
@@ -450,29 +479,26 @@ export const RoutineProvider = ({ children }) => {
     };
 
     const trackWater = () => {
-        setLifestyle(prev => {
-            if (prev.water.intake >= prev.water.target) return prev;
+        if (lifestyle.water.intake < lifestyle.water.target) {
             gainXp(10);
-            return {
+            setLifestyle(prev => ({
                 ...prev,
                 water: { ...prev.water, intake: prev.water.intake + 1 }
-            };
-        });
+            }));
+        }
     };
 
     const toggleSupplement = (id) => {
-        setLifestyle(prev => {
-            const today = new Date().toDateString();
-            const newSupplements = prev.supplements.map(sup => {
-                if (sup.id === id) {
-                    const isCompleted = sup.lastCompleted === today;
-                    if (!isCompleted) gainXp(15);
-                    return { ...sup, lastCompleted: isCompleted ? null : today };
-                }
-                return sup;
-            });
-            return { ...prev, supplements: newSupplements };
-        });
+        const today = new Date().toDateString();
+        const sup = lifestyle.supplements.find(s => s.id === id);
+        if (sup) {
+            const isCompleted = sup.lastCompleted === today;
+            if (!isCompleted) gainXp(15);
+            setLifestyle(prev => ({
+                ...prev,
+                supplements: prev.supplements.map(s => s.id === id ? { ...s, lastCompleted: isCompleted ? null : today } : s)
+            }));
+        }
     };
 
     const removeDietEntry = (id) => {
@@ -515,7 +541,8 @@ export const RoutineProvider = ({ children }) => {
             agScore: analysis?.agScore || 0,
             habits: lifestyle.habits,
             healthKit: { steps: activity.steps, sleepHours: lifestyle.sleep.duration, heartRate: 68 }, // Wrapped kit
-            healthData, analysis, ptPlan: coaching.ptPlan,
+            healthData: { inbodyHistory: body.inbodyHistory, badges: [] },
+            analysis, ptPlan: coaching.ptPlan,
             condition: lifestyle.condition,
             carryover: [],
             addDietEntry, removeDietEntry, addExerciseEntry, removeExerciseEntry,
