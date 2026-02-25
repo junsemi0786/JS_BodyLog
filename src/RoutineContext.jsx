@@ -436,6 +436,19 @@ export const RoutineProvider = ({ children }) => {
         setUser(prev => ({ ...prev, profile: { ...prev.profile, ...newProfile } }));
     };
 
+    const addInbodyEntry = (newEntry) => {
+        setHealthData(prev => ({
+            ...prev,
+            inbodyHistory: [{
+                id: Date.now(),
+                date: new Date().toISOString(),
+                ...newEntry
+            }, ...prev.inbodyHistory]
+        }));
+        gainXp(100);
+        confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#00E5FF', '#FF00E5'] });
+    };
+
     const trackWater = () => {
         setLifestyle(prev => {
             if (prev.water.intake >= prev.water.target) return prev;
@@ -502,12 +515,12 @@ export const RoutineProvider = ({ children }) => {
             agScore: analysis?.agScore || 0,
             habits: lifestyle.habits,
             healthKit: { steps: activity.steps, sleepHours: lifestyle.sleep.duration, heartRate: 68 }, // Wrapped kit
-            healthData: { inbodyHistory: body.inbodyHistory, badges: [] },
-            ptPlan: coaching.ptPlan,
-            analysis,
+            healthData, analysis, ptPlan: coaching.ptPlan,
             condition: lifestyle.condition,
             carryover: [],
-            addDietEntry, removeDietEntry, addExerciseEntry, removeExerciseEntry, toggleHabit, completeWorkout, updateCondition, updateProfile, toggleSet, trackWater, toggleSupplement
+            addDietEntry, removeDietEntry, addExerciseEntry, removeExerciseEntry,
+            addInbodyEntry, trackWater, toggleSupplement, updateCondition, updateProfile,
+            toggleSet, completeWorkout, gainXp, toggleHabit
         }}>
             {children}
         </RoutineContext.Provider>

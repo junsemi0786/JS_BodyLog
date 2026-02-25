@@ -123,9 +123,9 @@ const ConditionModal = ({ onSave }) => {
   );
 };
 
-// --- [HomeView] Practical InOut-style Dashboard ---
+// --- [HomeView] Primary Dashboard ---
 const HomeView = ({ onNavigate }) => {
-  const { analysis, habits, ptPlan, completeWorkout, addExerciseEntry } = useRoutine();
+  const { user, analysis, habits, ptPlan, toggleSet, completeWorkout, profile } = useRoutine();
   const [showSettings, setShowSettings] = useState(false);
 
   if (!analysis) return <div className="p-10 text-center animate-pulse text-dim">LOADING DATA...</div>;
@@ -436,7 +436,14 @@ const RecordView = () => {
             />
 
             <div className="flex justify-between items-center border-t border-white/10 pt-4 mt-2">
-              <button className="w-10 h-10 rounded-full flex items-center justify-center text-electric-blue bg-electric-blue/10 hover:bg-electric-blue hover:text-black transition-colors">
+              <button
+                onClick={() => {
+                  setInputText("단백질 쉐이크와 닭가슴살 샌드위치");
+                  confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#00E5FF'] });
+                }}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-electric-blue bg-electric-blue/10 hover:bg-electric-blue hover:text-black transition-colors"
+                title="Marlang Vision Scan"
+              >
                 <Camera size={18} />
               </button>
               <button
@@ -501,7 +508,11 @@ const RecordView = () => {
               const totalProtein = log.items.reduce((acc, item) => acc + (item.protein || 0), 0);
               const totalKcal = log.items.reduce((acc, item) => acc + (item.kcal || 0), 0);
               return (
-                <div key={log.id} className="card p-4 flex justify-between items-center bg-white/[0.01] border-white/5 hover:border-white/20 transition-colors mb-2 group">
+                <div
+                  key={log.id}
+                  onClick={() => setInputText(log.items[0]?.name || "")}
+                  className="card p-4 flex justify-between items-center bg-white/[0.01] border-white/5 hover:border-white/20 transition-all cursor-pointer mb-2 group active:scale-[0.98]"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
                       <Flame size={16} className="text-amber-500 opacity-80" />
@@ -513,7 +524,7 @@ const RecordView = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleQuickAdd(log)}
                       className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-dim bg-white/5 hover:bg-emerald-500 hover:text-black hover:border-emerald-500 transition-all"
@@ -617,13 +628,34 @@ const RecordView = () => {
           })}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
 // --- [ReportView] Visual SVG Charts & InBody Analytics ---
 const ReportView = () => {
-  const { healthData, analysis, profile } = useRoutine();
+  const { healthData, analysis, profile, addInbodyEntry } = useRoutine();
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanDone, setScanDone] = useState(false);
+
+  const handleInbodyScan = () => {
+    setIsScanning(true);
+    setScanDone(false);
+    setTimeout(() => {
+      // Simulate new InBody data
+      const currentWeight = healthData.inbodyHistory[0]?.weight || 77;
+      const variation = (Math.random() - 0.5) * 0.4; // ±0.2kg variation
+      addInbodyEntry({
+        weight: parseFloat((currentWeight + variation).toFixed(1)),
+        muscleMass: parseFloat((healthData.inbodyHistory[0]?.muscleMass || 34 + (Math.random() - 0.5) * 0.2).toFixed(1)),
+        fat: parseFloat((healthData.inbodyHistory[0]?.fat || 14 + (Math.random() - 0.5) * 0.2).toFixed(1)),
+        bmi: parseFloat((analysis.bmi || 24.4).toFixed(1)),
+      });
+      setIsScanning(false);
+      setScanDone(true);
+      setTimeout(() => setScanDone(false), 3000);
+    }, 1800);
+  };
 
   // Calculate points for the Weight Trend chart
   const history = [...healthData.inbodyHistory].reverse(); // oldest to newest for chart left-to-right
@@ -666,7 +698,18 @@ const ReportView = () => {
         <div className="card glass p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
           <div className="flex justify-between items-end mb-8">
             <h4 className="text-sm font-black text-white uppercase tracking-tighter">InBody Composition</h4>
-            <span className="text-[9px] text-electric-blue font-black uppercase tracking-widest px-2 py-0.5 bg-electric-blue/10 rounded-sm">Latest Sync</span>
+            <button
+              onClick={handleInbodyScan}
+              disabled={isScanning}
+              className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all active:scale-95 ${scanDone
+                  ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/30'
+                  : isScanning
+                    ? 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 animate-pulse'
+                    : 'bg-electric-blue/10 text-electric-blue border border-electric-blue/20 hover:bg-electric-blue/20'
+                }`}
+            >
+              {scanDone ? <><Check size={10} /> Synced</> : isScanning ? '⟳ Scanning...' : <><Camera size={10} /> Scan InBody</>}
+            </button>
           </div>
 
           <div className="space-y-6">
@@ -742,8 +785,8 @@ const ReportView = () => {
               <polyline fill="none" stroke="#00E5FF" strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" />
 
               {history.map((d, i) => {
-                const x = (i / (history.length - 1)) * width;
-                const y = height - ((d.weight - minWeight) / range) * height;
+                const x = (i / (history.length - 1 || 1)) * width;
+                const y = height - ((d.weight - minWeight) / safeRange) * height;
                 return (
                   <g key={i}>
                     {/* Glow and point */}
@@ -763,7 +806,23 @@ const ReportView = () => {
         </div>
       </section>
 
-      {/* 3. Summary Stats (BMI added) */}
+      {/* 3. Data Source Info */}
+      <section className="px-2 mb-6">
+        <div className="card p-5 border-white/5 bg-white/[0.02]">
+          <h4 className="text-[10px] font-black text-dim uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Info size={12} className="text-electric-blue" />
+            데이터 분석 근거
+          </h4>
+          <ul className="space-y-2 text-[10px] text-dim leading-relaxed">
+            <li>• <span className="text-white/70 font-bold">BMI</span>: 프로필 키·몸무게 기반 자동 계산 (체중 / 키²)</li>
+            <li>• <span className="text-white/70 font-bold">InBody</span>: 'Scan InBody' 버튼으로 최신 데이터를 수동 동기화</li>
+            <li>• <span className="text-white/70 font-bold">AG Score</span>: 식단 달성률·운동 연속 일수·습관 완료율 종합 점수</li>
+            <li>• <span className="text-white/70 font-bold">칼로리/영양소</span>: 오늘 날짜 기록된 LOG 데이터만 집계</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 4. Summary Stats (BMI added) */}
       <section className="px-2">
         <div className="grid grid-cols-2 gap-4">
           <div className="card p-5 border-t-2 border-t-electric-blue/50 bg-gradient-to-b from-electric-blue/5 to-transparent">
@@ -1071,7 +1130,7 @@ const App = () => {
 
   return (
     <div className="bg-space-gray min-h-screen text-white pb-24">
-      {activeTab === 'home' && <HomeView />}
+      {activeTab === 'home' && <HomeView onNavigate={setActiveTab} />}
       {activeTab === 'record' && <RecordView />}
       {activeTab === 'report' && <ReportView />}
       {activeTab === 'chat' && <ChatView />}
